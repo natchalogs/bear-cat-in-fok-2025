@@ -86,8 +86,12 @@
         let appData = null; 
         let unsubscribeTrip = null; 
         
-        // Simpler editing state for daily itinerary (the only complex part left)
+        // --- EDIT STATE ---
         let currentEdit = { dayIndex: null, itemId: null };
+        let currentChecklistEditId = null;
+        let currentExpenseEditId = null;
+        let currentPoiEditId = null;
+        // ------------------
 
         // -----------------------------------------------------------------
         // FIREBASE CONFIG
@@ -366,7 +370,7 @@
                     `;
                 }).join('');
 
-                const poiOptions = poiCatalog.map(poi => 
+                const poiOptions = (poiCatalog || []).map(poi => 
                     `<option value="${poi.id}">${poi.name}</option>`
                 ).join('');
 
@@ -433,7 +437,7 @@
             }).join('');
         }
 
-        // --- RENDER CHECKLIST (Stable v.4 logic - NO EDIT) ---
+        // --- RENDER CHECKLIST ---
         function renderChecklist(checklist) {
             const list = document.getElementById('checklist-list');
             const noChecklist = document.getElementById('no-checklist');
@@ -453,7 +457,10 @@
                 list.innerHTML += `
                     <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md group">
                         <div class="flex items-center flex-grow mr-2">
-                            <span class="${isDone ? 'text-gray-500' : 'text-gray-800'}">${item.name}</span>
+                            <span class="${isDone ? 'text-gray-500 line-through' : 'text-gray-800'}">${item.name}</span>
+                            <!-- Edit Button Added -->
+                            <button onclick="window.app.editChecklistItem('${item.id}')" 
+                                class="ml-2 text-xs text-blue-500 opacity-0 group-hover:opacity-100 hover:underline">แก้ไข</button>
                             ${createdByHtml}
                         </div>
                         <div class="flex-shrink-0">
@@ -474,7 +481,7 @@
             });
         }
 
-        // --- RENDER EXPENSES (Stable v.4 logic - NO EDIT) ---
+        // --- RENDER EXPENSES ---
         function renderExpenses(expenses) {
             const list = document.getElementById('expenses-list');
             const total = document.getElementById('expenses-total');
@@ -485,7 +492,7 @@
             noExpenses.classList.toggle('hidden', expenses.length > 0);
 
             let sum = 0;
-            expenses.forEach(exp => {
+            (expenses || []).forEach(exp => {
                 const createdByHtml = exp.createdBy 
                         ? `<span class="text-xs text-gray-400 italic block"> (โดย: ${exp.createdBy.split(' ')[0]})</span>` 
                         : '';
@@ -494,6 +501,9 @@
                     <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md group">
                         <div>
                             <span>${exp.name}</span>
+                            <!-- Edit Button Added -->
+                            <button onclick="window.app.editExpenseItem('${exp.id}')" 
+                                class="ml-2 text-xs text-blue-500 opacity-0 group-hover:opacity-100 hover:underline">แก้ไข</button>
                             ${createdByHtml}
                         </div>
                         <div class="flex items-center gap-2">
@@ -505,12 +515,15 @@
                         </div>
                     </li>
                 `;
-                sum += exp.amount;
+                // Only sum THB for total, or assume all are THB
+                if (exp.currency === "THB") {
+                    sum += exp.amount;
+                }
             });
             total.textContent = `ยอดรวม: ${sum.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท`;
         }
         
-        // --- RENDER POI (Stable v.4 logic - NO EDIT) ---
+        // --- RENDER POI ---
         function renderPOI(poiCatalog) {
             const list = document.getElementById('poi-list');
             if (!list) return;
@@ -532,8 +545,10 @@
                         ${notesHtml}
                         ${createdByHtml}
                         <div class="flex gap-3 mt-2">
+                            <!-- Edit Button Added -->
+                            <button onclick="window.app.editPOI('${poi.id}')" class="text-xs text-blue-500 hover:underline mr-2">แก้ไข</button>
                             <!-- Simple Delete Button -->
-                            <button onclick="window.app.removePOI('${poi.id}')" class="text-xs text-red-500 hover:underline">ลบ</Vbutton>
+                            <button onclick="window.app.removePOI('${poi.id}')" class="text-xs text-red-500 hover:underline">ลบ</button>
                         </div>
                     </li>
                 `;
@@ -582,7 +597,7 @@
             // --- Optimistic UI Update ---
             toggleDayHeaderEdit(dayIndex, null, false);
             // Update local data optimistically
-            const oldItinerary = appData.dailyItinerary;
+            const oldItinerary = [...appData.dailyItinerary]; // Store old state
             appData.dailyItinerary[dayIndex].day = newTitle;
             renderDailyItinerary(appData.dailyItinerary, appData.poiCatalog);
 
@@ -643,7 +658,8 @@
             const newText = textInput.value.trim();
 
             if (!newText) {
-                alert("กรุณาใส่รายละเอียดกิจกรรม");
+                // Use a simple custom alert or just log, avoid window.alert
+                displayError("กรุณาใส่รายละเอียดกิจกรรม", "Validation Error");
                 return;
             }
             
@@ -675,7 +691,7 @@
             const text = textInput.value.trim();
 
             if (!text) {
-                alert("กรุณาใส่รายละเอียดกิจกรรม");
+                displayError("กรุณาใส่รายละเอียดกิจกรรม", "Validation Error");
                 return;
             }
 
@@ -750,34 +766,70 @@
             }
         }
 
-        async function addExpense() {
+        // --- EXPENSE FUNCTIONS (ADD/EDIT) ---
+        async function addOrUpdateExpense() {
             const nameInput = document.getElementById('expense-name');
             const amountInput = document.getElementById('expense-amount');
-            if (!nameInput || !amountInput) return;
+            if (!nameInput || !amountInput || !appData) return;
 
             const name = nameInput.value.trim();
             const amount = parseFloat(amountInput.value);
 
-            if (name && !isNaN(amount)) {
-                const newExpense = {
-                    id: `exp${Date.now()}`,
-                    name: name,
-                    amount: amount,
-                    currency: "THB",
-                    createdBy: userDisplayName 
-                };
-                try {
-                    const docRef = doc(db, "tripPlans", tripDocId);
+            if (!name || isNaN(amount)) {
+                displayError("กรุณาใส่ชื่อและจำนวนเงินให้ถูกต้อง", "Validation Error");
+                return;
+            }
+
+            const docRef = doc(db, "tripPlans", tripDocId);
+
+            try {
+                if (currentExpenseEditId) {
+                    // --- UPDATE ---
+                    const newExpenses = appData.expenses.map(exp => {
+                        if (exp.id === currentExpenseEditId) {
+                            return { ...exp, name: name, amount: amount, currency: "THB", updatedBy: userDisplayName };
+                        }
+                        return exp;
+                    });
+                    await updateDoc(docRef, { expenses: newExpenses });
+                } else {
+                    // --- ADD ---
+                    const newExpense = {
+                        id: `exp${Date.now()}`,
+                        name: name,
+                        amount: amount,
+                        currency: "THB",
+                        createdBy: userDisplayName 
+                    };
                     await updateDoc(docRef, { expenses: arrayUnion(newExpense) });
-                    nameInput.value = '';
-                    amountInput.value = '';
-                } catch (error) {
-                    displayError("ไม่สามารถเพิ่มรายจ่ายได้", error);
                 }
+                cancelEditExpense(); // Reset form
+            } catch (error) {
+                displayError("ไม่สามารถบันทึกรายจ่ายได้", error);
             }
         }
+
+        function editExpenseItem(id) {
+            const item = appData.expenses.find(e => e.id === id);
+            if (!item) return;
+
+            currentExpenseEditId = id;
+            document.getElementById('expense-name').value = item.name;
+            document.getElementById('expense-amount').value = item.amount;
+
+            document.getElementById('add-expense-btn').classList.add('hidden');
+            document.getElementById('expense-edit-buttons').classList.remove('hidden');
+        }
+
+        function cancelEditExpense() {
+            currentExpenseEditId = null;
+            document.getElementById('expense-name').value = '';
+            document.getElementById('expense-amount').value = '';
+
+            document.getElementById('add-expense-btn').classList.remove('hidden');
+            document.getElementById('expense-edit-buttons').classList.add('hidden');
+        }
         
-        // --- NEW: Remove Expense Item ---
         async function removeExpenseItem(id) {
             if (!appData) return;
             const itemToRemove = appData.expenses.find(item => item.id === id);
@@ -791,27 +843,64 @@
             }
         }
 
-        async function addChecklistItem() {
+        // --- CHECKLIST FUNCTIONS (ADD/EDIT) ---
+        async function addOrUpdateChecklistItem() {
             const input = document.getElementById('checklist-name');
             if (!input) return;
             const name = input.value.trim();
-            if (name) {
-                const newItem = {
-                    id: `chk${Date.now()}`,
-                    name: name,
-                    done: false,
-                    createdBy: userDisplayName 
-                };
-                try {
-                    const docRef = doc(db, "tripPlans", tripDocId);
+            if (!name) return;
+
+            const docRef = doc(db, "tripPlans", tripDocId);
+
+            try {
+                if (currentChecklistEditId) {
+                    // --- UPDATE ---
+                    const newChecklist = appData.checklist.map(item => {
+                        if (item.id === currentChecklistEditId) {
+                            return { ...item, name: name, updatedBy: userDisplayName };
+                        }
+                        return item;
+                    });
+                    await updateDoc(docRef, { checklist: newChecklist });
+
+                } else {
+                    // --- ADD ---
+                    const newItem = {
+                        id: `chk${Date.now()}`,
+                        name: name,
+                        done: false,
+                        createdBy: userDisplayName 
+                    };
                     await updateDoc(docRef, { checklist: arrayUnion(newItem) });
-                    input.value = '';
-                } catch (error) {
-                    displayError("ไม่สามารถเพิ่มรายการ Checklist ได้", error);
                 }
+                cancelEditChecklist(); // Reset form
+            } catch (error) { 
+                displayError("ไม่สามารถบันทึกรายการ Checklist ได้", error);
             }
         }
         
+        function editChecklistItem(id) {
+            const item = appData.checklist.find(c => c.id === id);
+            if (!item) return;
+
+            currentChecklistEditId = id;
+            document.getElementById('checklist-name').value = item.name;
+
+            document.getElementById('add-checklist-btn').classList.add('hidden');
+            document.getElementById('update-checklist-btn').classList.remove('hidden');
+            document.getElementById('cancel-checklist-btn').classList.remove('hidden');
+            document.getElementById('checklist-name').focus();
+        }
+
+        function cancelEditChecklist() {
+            currentChecklistEditId = null;
+            document.getElementById('checklist-name').value = '';
+
+            document.getElementById('add-checklist-btn').classList.remove('hidden');
+            document.getElementById('update-checklist-btn').classList.add('hidden');
+            document.getElementById('cancel-checklist-btn').classList.add('hidden');
+        }
+
         async function toggleChecklistItem(id, isDone) {
             if (!appData) return;
             const newChecklist = appData.checklist.map(item => {
@@ -828,7 +917,6 @@
             }
         }
 
-        // --- NEW: Remove Checklist Item ---
         async function removeChecklistItem(id) {
             if (!appData) return;
             const itemToRemove = appData.checklist.find(item => item.id === id);
@@ -842,60 +930,72 @@
             }
         }
 
-        function autoFillPoiName() {
-            const linkInput = document.getElementById('poi-link');
-            const nameInput = document.getElementById('poi-name');
-            const url = linkInput.value.trim();
-
-            if (!url) {
-                alert("กรุณาวางลิงก์ Google Maps ก่อนค่ะ");
-                return;
-            }
-
-            const regex = /place\/([^\/]+)/;
-            const match = url.match(regex);
-
-            if (match && match[1]) {
-                let extractedName = decodeURIComponent(match[1].replace(/\+/g, ' '));
-                nameInput.value = extractedName;
-                nameInput.classList.add('bg-green-100');
-                setTimeout(() => nameInput.classList.remove('bg-green-100'), 1000);
-            } else {
-                alert("ไม่สามารถดึงชื่อจากลิงก์นี้ได้อัตโนมัติ (กรุณาพิมพ์ชื่อเองนะคะ)");
-                nameInput.focus();
-            }
-        }
-
-        async function addPOI() {
+        // --- POI FUNCTIONS (ADD/EDIT) ---
+        async function addOrUpdatePOI() {
             const nameInput = document.getElementById('poi-name');
             const linkInput = document.getElementById('poi-link');
             const notesInput = document.getElementById('poi-notes'); 
-            if (!nameInput || !linkInput || !notesInput) return;
+            if (!nameInput || !linkInput || !notesInput || !appData) return;
 
             const name = nameInput.value.trim();
             const mapLink = linkInput.value.trim();
             const notes = notesInput.value.trim(); 
 
-            if (name && mapLink) {
-                const newPOI = {
-                    id: `poi${Date.now()}`,
-                    name: name,
-                    mapLink: mapLink,
-                    notes: notes,
-                    createdBy: userDisplayName 
-                };
-                try {
-                    const docRef = doc(db, "tripPlans", tripDocId);
-                    await updateDoc(docRef, { poiCatalog: arrayUnion(newPOI) });
-                    nameInput.value = '';
-                    linkInput.value = '';
-                    notesInput.value = ''; 
-                } catch (error) {
-                    displayError("ไม่สามารถเพิ่ม POI ได้", error);
-                }
-            } else {
-                alert("กรุณาใส่ลิงก์และชื่อสถานที่");
+            if (!name || !mapLink) {
+                displayError("กรุณาใส่ลิงก์และชื่อสถานที่", "Validation Error");
+                return;
             }
+
+            const docRef = doc(db, "tripPlans", tripDocId);
+            
+            try {
+                if (currentPoiEditId) {
+                    // --- UPDATE ---
+                    const newPoiCatalog = appData.poiCatalog.map(poi => {
+                        if (poi.id === currentPoiEditId) {
+                            return { ...poi, name, mapLink, notes, updatedBy: userDisplayName };
+                        }
+                        return poi;
+                    });
+                    await updateDoc(docRef, { poiCatalog: newPoiCatalog });
+                } else {
+                    // --- ADD ---
+                    const newPOI = {
+                        id: `poi${Date.now()}`,
+                        name: name,
+                        mapLink: mapLink,
+                        notes: notes,
+                        createdBy: userDisplayName 
+                    };
+                    await updateDoc(docRef, { poiCatalog: arrayUnion(newPOI) });
+                }
+                cancelEditPOI(); // Reset form
+            } catch (error) {
+                displayError("ไม่สามารถบันทึก POI ได้", error);
+            }
+        }
+
+        function editPOI(id) {
+            const item = appData.poiCatalog.find(p => p.id === id);
+            if (!item) return;
+
+            currentPoiEditId = id;
+            document.getElementById('poi-name').value = item.name;
+            document.getElementById('poi-link').value = item.mapLink;
+            document.getElementById('poi-notes').value = item.notes || '';
+
+            document.getElementById('add-poi-btn').classList.add('hidden');
+            document.getElementById('poi-edit-buttons').classList.remove('hidden');
+        }
+
+        function cancelEditPOI() {
+            currentPoiEditId = null;
+            document.getElementById('poi-name').value = '';
+            document.getElementById('poi-link').value = '';
+            document.getElementById('poi-notes').value = '';
+
+            document.getElementById('add-poi-btn').classList.remove('hidden');
+            document.getElementById('poi-edit-buttons').classList.add('hidden');
         }
 
         async function removePOI(id) {
@@ -919,19 +1019,25 @@
             removeDailyItem,
             addDay,
             addPoiToText,
-            addExpense,
-            removeExpenseItem, // Added
-            addChecklistItem,
+            addOrUpdateExpense, // Renamed
+            editExpenseItem,    // New
+            cancelEditExpense,  // New
+            removeExpenseItem, 
+            addOrUpdateChecklistItem, // Renamed
+            editChecklistItem,    // New
+            cancelEditChecklist,  // New
             toggleChecklistItem,
-            removeChecklistItem, // Added
-            addPOI,
+            removeChecklistItem, 
+            addOrUpdatePOI,     // Renamed
+            editPOI,            // New
+            cancelEditPOI,      // New
             removePOI,
             toggleDayHeaderEdit, 
             updateDayHeader, 
             editDailyItem,   
             updateDailyItem, 
             cancelEdit,
-            autoFillPoiName
+            // autoFillPoiName - REMOVED
         };
 
         // --- Start Application ---
@@ -1038,8 +1144,13 @@
                         <div class="mt-4 flex space-x-2 border-t pt-4">
                             <input type="text" id="checklist-name" placeholder="เพิ่มรายการใหม่"
                                 class="flex-grow p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                            <button onclick="window.app.addChecklistItem()"
+                            <button id="add-checklist-btn" onclick="window.app.addOrUpdateChecklistItem()"
                                 class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">เพิ่ม</button>
+                            <!-- Edit Buttons -->
+                            <button id="update-checklist-btn" onclick="window.app.addOrUpdateChecklistItem()"
+                                class="hidden px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">บันทึก</button>
+                            <button id="cancel-checklist-btn" onclick="window.app.cancelEditChecklist()"
+                                class="hidden px-2 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600">ยกเลิก</button>
                         </div>
                     </div>
                 </div>
@@ -1062,8 +1173,15 @@
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
                             <input type="number" id="expense-amount" placeholder="จำนวนเงิน (บาท)"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                            <button onclick="window.app.addExpense()"
+                            <button id="add-expense-btn" onclick="window.app.addOrUpdateExpense()"
                                 class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">บันทึกรายจ่าย</button>
+                            <!-- Edit Buttons -->
+                            <div id="expense-edit-buttons" class="hidden w-full flex gap-2">
+                                <button onclick="window.app.addOrUpdateExpense()"
+                                    class="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">บันทึก</button>
+                                <button onclick="window.app.cancelEditExpense()"
+                                    class="w-auto px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600">ยกเลิก</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1076,24 +1194,28 @@
                             <!-- POI items here -->
                         </ul>
                         <div class="mt-4 space-y-2 border-t pt-4">
-                            <h3 class="font-semibold">เพิ่มสถานที่ใหม่</h3>
+                            <h3 class="font-semibold">เพิ่ม/แก้ไข สถานที่</h3>
                             
                             <input type="text" id="poi-link" placeholder="วางลิงก์ Google Maps (แบบเต็ม) ที่นี่"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
                             
-                            <button onclick="window.app.autoFillPoiName()" 
-                                class="w-full px-3 py-1 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md hover:bg-yellow-200 text-sm flex items-center justify-center gap-1">
-                                ⚡ ดึงชื่อสถานที่จากลิงก์
-                            </button>
+                            <!-- REMOVED Auto-fill button -->
 
-                            <input type="text" id="poi-name" placeholder="ชื่อสถานที่ (จะขึ้นเองอัตโนมัติ)"
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 bg-gray-50">
+                            <input type="text" id="poi-name" placeholder="ชื่อสถานที่"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
                             
                             <input type="text" id="poi-notes" placeholder="โน้ตย่อ (เช่น 'ราเม็ง 24 ชม.')"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
                             
-                            <button onclick="window.app.addPOI()"
+                            <button id="add-poi-btn" onclick="window.app.addOrUpdatePOI()"
                                 class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">เพิ่มเข้าไดเรกทอรี</button>
+                            <!-- Edit Buttons -->
+                            <div id="poi-edit-buttons" class="hidden w-full flex gap-2">
+                                <button onclick="window.app.addOrUpdatePOI()"
+                                    class="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">บันทึก</button>
+                                <button onclick="window.app.cancelEditPOI()"
+                                    class="w-auto px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600">ยกเลิก</button>
+                            </div>
                         </div>
                     </div>
                 </div>
