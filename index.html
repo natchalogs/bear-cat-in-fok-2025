@@ -1,3 +1,6 @@
+<!DOCTYPE html>
+<html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +10,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;700&display=swap"
         rel="stylesheet">
     <style>
-        /* (CSS Styles remain the same) */
+        /* (v.6) Updated body background for contrast */
+        body {
+            font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+            background-color: #e2e8f0; /* bg-slate-200 */
+        }
         details[open] summary {
             font-weight: 600;
         }
@@ -36,41 +43,41 @@
             top: 0.5rem;
             width: 0.625rem;
             height: 0.625rem;
-            background-color: #4f46e5; /* Indigo */
+            background-color: #4f46e5; /* indigo-600 */
             border-radius: 9999px;
             border: 2px solid white;
         }
 
-        /* Loading Spinner */
+        /* (v.6) Updated Loading Spinner animation */
         .loader {
-            border: 4px solid #f3f3f3; /* Light grey */
-            border-top: 4px solid #4f46e5; /* Indigo */
+            border: 4px solid #f3f3f3; 
+            border-top: 4px solid #4f46e5; /* indigo-600 */
             border-radius: 50%;
             width: 40px;
             height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        /* (v.7) Spinner for AI Button */
-        .btn-spinner {
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-left-color: #ffffff;
-            border-radius: 50%;
-            width: 1rem;
-            height: 1rem;
             animation: spin 1s linear infinite;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
-        /* Pulse for loading text */
+        /* (v.6) Pulse animation for loading text */
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
         .animate-pulse {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* (v.7) Spinner for POI button */
+        .poi-spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-left-color: #ffffff;
+            border-radius: 50%;
+            width: 1rem;
+            height: 1rem;
+            animation: spin 1s linear infinite;
         }
     </style>
     <script type="module">
@@ -81,7 +88,9 @@
             onAuthStateChanged,
             GoogleAuthProvider,
             signInWithPopup,
-            signOut
+            signOut,
+            signInWithCustomToken, // Added for potential environment compatibility
+            signInAnonymously      // Added for fallback
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import {
             getFirestore,
@@ -98,33 +107,43 @@
         // --- Global Variables ---
         let app, db, auth;
         let userId, userDisplayName;
-        const tripDocId = "mhee-maew-trip-2025"; 
+        
+        // (v.7) Use __app_id if available (for Canvas environment)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const tripDocId = `mhee-maew-trip-2025`; // Using a consistent ID
+        const docRefPath = `/artifacts/${appId}/public/data/tripPlans/${tripDocId}`;
+
         let appData = null; 
         let unsubscribeTrip = null; 
         
-        // --- Simplified Editing States (NEW v.5) ---
+        // (v.5) Editing state for Checklist, Expenses, POI
         let currentEdit = {
-            dayIndex: null,
-            itemId: null,
-            checklistId: null,
-            expenseId: null,
-            poiId: null
+            dayIndex: null, itemId: null, // Itinerary
+            checklistId: null,           // Checklist
+            expenseId: null,             // Expenses
+            poiId: null                  // POI
         };
         
         // --- (v.7) Gemini API Configuration ---
-        const geminiApiKey = "AIzaSyAfkZW59UlXSDndOkSFuTIp9rU_X4SjRcQ"; // Provided by environment
+        // IMPORTANT: If running outside the original environment (e.g., gitlab.io),
+        // you MUST provide your own Gemini API key here.
+        const geminiApiKey = "AIzaSyAfkZW59UlXSDndOkSFuTIp9rU_X4SjRcQ"; // <--- PASTE YOUR GEMINI API KEY HERE
+        const geminiApiUrl = `https://generativelen.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`;
 
         // -----------------------------------------------------------------
         // FIREBASE CONFIG
-        const firebaseConfig = {
-          apiKey: "AIzaSyDzYQTm0V6yBcOCyBGJxD65AoGRHKEOZng",
-          authDomain: "bear-cat-in-fok-2025.firebaseapp.com",
-          projectId: "bear-cat-in-fok-2025",
-          storageBucket: "bear-cat-in-fok-2025.firebasestorage.app",
-          messagingSenderId: "178010604106",
-          appId: "1:178010604106:web:2dc3d30600b7a8d7769cb3",
-          measurementId: "G-KDSLTNV0MJ"
-        };
+        // (v.7) Use __firebase_config if available (for Canvas environment)
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config)
+            : {
+                // Fallback config (replace with your own if not in Canvas)
+                apiKey: "AIzaSyDzYQTm0V6yBcOCyBGJxD65AoGRHKEOZng",
+                authDomain: "bear-cat-in-fok-2025.firebaseapp.com",
+                projectId: "bear-cat-in-fok-2025",
+                storageBucket: "bear-cat-in-fok-2025.firebasestorage.app",
+                messagingSenderId: "178010604106",
+                appId: "1:178010604106:web:2dc3d30600b7a8d7769cb3"
+            };
         // -----------------------------------------------------------------
 
         // --- Tailwind Configuration ---
@@ -134,6 +153,21 @@
                     fontFamily: {
                         sans: ['Inter', 'Noto Sans Thai', 'sans-serif'],
                     },
+                    // (v.6) Added indigo colors for theme
+                    colors: {
+                        indigo: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        },
+                    }
                 },
             },
         };
@@ -141,15 +175,19 @@
         // --- Error Display ---
         function displayError(message, error) {
             const errorElement = document.getElementById('error-message');
-            if (errorElement) {
+            const errorText = document.getElementById('error-message-text');
+            if (errorText && errorElement) {
                 if (message) {
-                    errorElement.textContent = `เกิดข้อผิดพลาด: ${message}. ${error ? (error.message || error) : ''}`;
+                    errorText.textContent = `เกิดข้อผิดพลาด: ${message}. ${error ? (error.message || error) : ''}`;
                     errorElement.classList.remove('hidden');
+                    // (v.7) Scroll to error
+                    errorElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 } else {
+                    errorText.textContent = '';
                     errorElement.classList.add('hidden');
                 }
             }
-            if (message || error) {
+            if (message) {
                 console.error(message, error || '');
             }
         }
@@ -176,8 +214,13 @@
                         mainApp.classList.remove('hidden');
                         loginScreen.classList.add('hidden');
                         
-                        const shortName = userDisplayName.split(' ')[0];
-                        userDisplay.textContent = shortName;
+                        // (v.7) Add null check for userDisplayName
+                        if (userDisplayName) {
+                            const shortName = userDisplayName.split(' ')[0];
+                            userDisplay.textContent = shortName;
+                        } else {
+                            userDisplay.textContent = 'User'; // Fallback
+                        }
                         logoutButton.classList.remove('hidden');
 
                         await loadDataAndRender();
@@ -194,8 +237,23 @@
                     
                     loadingScreen.classList.add('hidden');
                 });
+
+                // (v.7) Handle Auth based on environment
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else if (!auth.currentUser) {
+                    // Fallback for environments without the token (like gitlab.io)
+                    // This will allow Google Sign-in popup to work.
+                    // Or, if you prefer anonymous access as a base:
+                    // await signInAnonymously(auth); 
+                    console.log("No initial auth token. Waiting for user login.");
+                }
+
             } catch (error) {
                 displayError("ไม่สามารถเริ่มต้น Firebase ได้", error);
+                document.getElementById('loading-screen').classList.add('hidden');
+                // (v.6) Show login screen even if auth fails, so user can try
+                document.getElementById('login-screen').classList.remove('hidden');
             }
         }
         
@@ -203,6 +261,8 @@
         async function signInWithGoogle() {
             const provider = new GoogleAuthProvider();
             try {
+                // (v.7) Clear previous errors before login
+                displayError(null);
                 await signInWithPopup(auth, provider);
             } catch (error) {
                 displayError("ไม่สามารถล็อกอินด้วย Google ได้", error);
@@ -219,8 +279,10 @@
 
         // --- Data Loading ---
         async function loadDataAndRender() {
-            if (!db || !tripDocId) return;
-            const docRef = doc(db, "tripPlans", tripDocId);
+            if (!db || !userId) return; // (v.7) Wait for userId
+            
+            // (v.7) Use full path for doc ref
+            const docRef = doc(db, docRefPath);
 
             try {
                 const docSnap = await getDoc(docRef);
@@ -251,6 +313,7 @@
                     {
                         title: "ขาไป (BKK → FUK)",
                         flights: [
+                            // (v.7) Updated to YYYY
                             "26 Oct 2025, 23:50 (BKK) → 27 Oct 04:50 (MNL) | PR733 | ที่นั่ง 52J, 52K",
                             "27 Oct 2025, 10:00 (MNL) → 14:40 (FUK) | PR426 | ที่นั่ง 51A, 51B"
                         ]
@@ -263,9 +326,9 @@
                     }
                 ],
                 accommodations: [
-                    // --- FIXED PERMANENT LINKS ---
                     {
                         name: "旧P203 Phoenix inn (Fukuoka)",
+                        // (v.7) Updated to YYYY
                         dates: "27 Dec - 30 Dec 2025",
                         address: "5-chōme-4-15 Katakasu, Hakata Ward",
                         mapLink: "https://www.google.com/maps/place/5-ch%C5%8Dme-4-15+Katakasu,+Hakata+Ward,+Fukuoka,+812-0043,+Japan", 
@@ -274,6 +337,7 @@
                     },
                     {
                         name: "天王寺204 (Osaka)",
+                        // (v.7) Updated to YYYY
                         dates: "30 Dec 2025 - 3 Jan 2026",
                         address: "南河堀町10-3, 大阪市天王寺区",
                         mapLink: "https://www.google.com/maps/place/10-3+Minamikawahorich%C5%8D,+Tenn%C5%8Dji+Ward,+Osaka,+543-0054,+Japan", 
@@ -282,6 +346,7 @@
                     }
                 ],
                 dailyItinerary: [
+                    // (v.7) Updated to YYYY
                     { day: "Day 1 (27 Dec 2025): Fukuoka", items: [{ id: `item${Date.now()}`, time: "15:00", text: "Check-in ที่พัก (Phoenix inn)"}] },
                     { day: "Day 2 (28 Dec 2025): Fukuoka", items: [] },
                     { day: "Day 3 (29 Dec 2025): Fukuoka", items: [] },
@@ -303,16 +368,22 @@
                     { id: "chk4", name: "จอง JR Pass", done: false },
                     { id: "chk5", name: "แลกเงินเยน", done: false }
                 ],
-                poiCatalog: [] // --- EMPTY POI CATALOG AS REQUESTED ---
+                poiCatalog: [] 
             };
+            // (v.7) Add creator info only if user is logged in
+            if (userDisplayName) {
+                const createdBy = { createdBy: userDisplayName };
+                initialData.expenses.forEach(i => Object.assign(i, createdBy));
+                initialData.checklist.forEach(i => Object.assign(i, createdBy));
+            }
             await setDoc(docRef, initialData);
         }
         
         // --- Main UI Rendering Functions ---
-        // Wrapped in try...catch for safety
-        
         function renderUI(data) {
             if (!data) return;
+            // (v.7) Clear error on successful render
+            displayError(null);
             const safeData = {
                 dailyItinerary: data.dailyItinerary || [],
                 checklist: data.checklist || [],
@@ -334,7 +405,8 @@
             if (!container) return;
             container.innerHTML = flightInfo.map(info => `
                 <div class="mb-4">
-                    <h4 class="font-semibold text-lg text-gray-800">${info.title}</h4>
+                    <!-- (v.5) Header color changed -->
+                    <h4 class="font-semibold text-lg text-indigo-700">${info.title}</h4>
                     <ul class="list-disc list-inside text-gray-700">
                         ${info.flights.map(f => `<li>${f}</li>`).join('')}
                     </ul>
@@ -347,37 +419,32 @@
             if (!container) return;
             container.innerHTML = accommodations.map(acc => `
                 <div class="mb-4">
-                    <h4 class="font-semibold text-lg text-gray-800">${acc.name}</h4>
+                    <!-- (v.5) Header color changed -->
+                    <h4 class="font-semibold text-lg text-indigo-700">${acc.name}</h4>
                     <p class="text-sm text-gray-600">${acc.dates} | ${acc.address}</p>
                     <p class="text-sm text-gray-600">📍 ${acc.station}</p>
                     <p class="text-sm text-gray-600">ราคา: ${acc.priceTHB.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</p>
-                    <a href="${acc.mapLink}" target="_blank" class="text-indigo-600 hover:underline text-sm">ดูแผนที่ Google Maps</a>
+                    <a href="${acc.mapLink}" target="_blank" class="text-blue-600 hover:underline text-sm">ดูแผนที่ Google Maps</a>
                 </div>
             `).join('');
         }
 
-        // RENDER DAILY ITINERARY (v.6 - Dropdown Time)
+        // RENDER DAILY ITINERARY
         function renderDailyItinerary(itinerary, poiCatalog) {
             const container = document.getElementById('daily-itinerary-container');
             if (!container) return;
 
             const openStates = {};
-            const detailsElements = container.querySelectorAll('details');
-            detailsElements.forEach((el, idx) => {
+            container.querySelectorAll('details').forEach((el) => {
                 const titleEl = el.querySelector('summary > div > span');
                 if (titleEl) {
                     openStates[titleEl.textContent] = el.hasAttribute('open');
                 }
             });
             
-            // --- Create dropdown options (v.6) ---
-            const hourOptions = Array.from({ length: 24 }, (_, i) => i)
-                .map(h => `<option value="${String(h).padStart(2, '0')}">${String(h).padStart(2, '0')}</option>`).join('');
-            const minuteOptions = ['00', '15', '30', '45']
-                .map(m => `<option value="${m}">${m}</option>`).join('');
-
             container.innerHTML = itinerary.map((dayItem, index) => {
                 const timelineHtml = (dayItem.items || []).sort((a, b) => a.time.localeCompare(b.time)).map(item => {
+                    // (v.5) Removed createdBy
                     return `
                     <div class="timeline-item pb-4">
                         <div class="timeline-dot"></div>
@@ -388,9 +455,9 @@
                             </div>
                             <div class="flex-shrink-0 ml-2">
                                 <button onclick="window.app.editDailyItem(${index}, '${item.id}')"
-                                    class="text-indigo-500 hover:text-indigo-700 text-sm font-medium transition-colors">แก้ไข</button>
+                                    class="text-blue-500 hover:text-blue-700 text-sm font-medium">แก้ไข</button>
                                 <button onclick="window.app.removeDailyItem(${index}, '${item.id}')" 
-                                    class="text-red-500 hover:text-red-700 text-sm font-medium ml-2 transition-colors">ลบ</button>
+                                    class="text-red-500 hover:text-red-700 text-sm font-medium ml-2">ลบ</button>
                             </div>
                         </div>
                     </div>
@@ -402,24 +469,35 @@
                 ).join('');
 
                 const isOpen = openStates[dayItem.day] !== undefined ? openStates[dayItem.day] : (index === 0);
+                
+                // (v.7) Create <select> options for time
+                const hourOptions = Array.from({ length: 24 }, (_, i) => {
+                    const hour = i.toString().padStart(2, '0');
+                    return `<option value="${hour}">${hour}</option>`;
+                }).join('');
+                const minuteOptions = ['00', '15', '30', '45'].map(min => {
+                    return `<option value="${min}">${min}</option>`;
+                }).join('');
 
                 return `
-                <details ${isOpen ? 'open' : ''} class="mb-2 bg-slate-50 shadow-sm rounded-lg overflow-hidden">
-                    <summary class="font-semibold p-4 cursor-pointer hover:bg-slate-100 transition-colors flex justify-between items-center gap-2 border-b border-slate-200">
+                <!-- (v.5) Added bg-slate-50 for contrast -->
+                <details ${isOpen ? 'open' : ''} class="mb-2 bg-slate-50 shadow-sm rounded-lg overflow-hidden border border-slate-200">
+                    <!-- (v.6) Added transition -->
+                    <summary class="font-semibold p-4 cursor-pointer hover:bg-slate-100 transition-colors flex justify-between items-center gap-2">
                         
-                        <!-- Display Mode -->
                         <div id="day-header-display-${index}" class="flex justify-between items-center flex-grow">
-                            <span class="font-semibold text-lg text-gray-800">${dayItem.day}</span>
+                            <!-- (v.5) Header color changed -->
+                            <span class="font-semibold text-lg text-indigo-700">${dayItem.day}</span>
                             <button onclick="window.app.toggleDayHeaderEdit(${index}, event, true)" 
-                                    class="ml-2 p-2 rounded-full hover:bg-gray-200 flex-shrink-0 transition-colors">
+                                    class="ml-2 p-2 rounded-full hover:bg-gray-200 flex-shrink-0">
                                 <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
                             </button>
                         </div>
 
-                        <!-- Edit Mode (Hidden by default) -->
                         <div id="day-header-edit-${index}" class="hidden flex justify-between items-center flex-grow gap-2">
                             <input type="text" id="day-header-input-${index}" value="${dayItem.day}" 
-                                   class="font-semibold text-lg p-2 border border-gray-300 rounded-md flex-grow focus:border-indigo-500 focus:ring-indigo-500">
+                                   class="font-semibold text-lg p-2 border border-gray-300 rounded-md flex-grow focus:border-blue-500 focus:ring-blue-500">
+                            <!-- (v.6) Added transition -->
                             <button onclick="window.app.updateDayHeader(${index})" 
                                     class="ml-2 px-3 py-1 bg-green-500 text-white text-sm rounded-md hover:bg-green-600 flex-shrink-0 transition-all duration-200 ease-in-out">บันทึก</button>
                             <button onclick="window.app.toggleDayHeaderEdit(${index}, event, false)" 
@@ -427,32 +505,34 @@
                         </div>
 
                     </summary>
-                    <div class="p-4 border-t border-gray-200 bg-white">
+                    <!-- (v.5) Set to white for contrast with summary -->
+                    <div class="p-4 border-t border-slate-200 bg-white">
                         <div class="mb-4">
                             ${timelineHtml || '<p class="text-gray-500 text-sm">ยังไม่มีกิจกรรมในวันนี้</p>'}
                         </div>
                         
                         <div class="mt-4 pt-4 border-t">
                             <h4 class="font-semibold mb-2">เพิ่มกิจกรรมใหม่ในวันนี้</h4>
-                            
-                            <!-- (v.6) Time Dropdowns -->
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                <select id="item-hour-${index}" class="p-2 border border-gray-300 rounded-md">
-                                    ${hourOptions}
-                                </select>
-                                <select id="item-minute-${index}" class="p-2 border border-gray-300 rounded-md">
-                                    ${minuteOptions}
-                                </select>
-                                <input type="text" id="item-text-${index}" placeholder="รายละเอียดกิจกรรม" class="col-span-2 md:col-span-2 p-2 border border-gray-300 rounded-md">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                <!-- (v.7) Time input changed to select dropdowns -->
+                                <div class="col-span-1 flex gap-2">
+                                    <select id="item-hour-${index}" class="flex-grow p-2 border border-gray-300 rounded-md">
+                                        ${hourOptions}
+                                    </select>
+                                    <select id="item-minute-${index}" class="flex-grow p-2 border border-gray-300 rounded-md">
+                                        ${minuteOptions}
+                                    </select>
+                                </div>
+                                <input type="text" id="item-text-${index}" placeholder="รายละเอียดกิจกรรม" class="md:col-span-2 p-2 border border-gray-300 rounded-md">
                             </div>
-
                             <div class="flex items-center gap-2 mt-2">
                                 <select id="poi-select-${index}" class="flex-grow p-2 border border-gray-300 rounded-md">
                                     <option value="">-- เลือกสถานที่จากไดเรกทอรี --</option>
                                     ${poiOptions}
                                 </select>
-                                <button onclick="window.app.addPoiToText(${index})" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-sm transition-colors">ใช้</button>
+                                <button onclick="window.app.addPoiToText(${index})" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-sm">ใช้</button>
                             </div>
+                            <!-- (v.6) Button theme changed to indigo -->
                             <button id="add-item-btn-${index}" onclick="window.app.addDailyItem(${index})"
                                 class="mt-2 w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">
                                 + เพิ่มกิจกรรม
@@ -468,17 +548,11 @@
                         </div>
                     </div>
                 </details>
-            `;
+                `;
             }).join('');
-            
-            // --- Set default time for new entries (v.6) ---
-            itinerary.forEach((_, index) => {
-                const hourSelect = document.getElementById(`item-hour-${index}`);
-                if(hourSelect) hourSelect.value = '09';
-            });
         }
 
-        // --- RENDER CHECKLIST (v.6 - Edit/Delete Buttons moved) ---
+        // --- RENDER CHECKLIST ---
         function renderChecklist(checklist) {
             const list = document.getElementById('checklist-list');
             const noChecklist = document.getElementById('no-checklist');
@@ -491,21 +565,25 @@
 
             sortedList.forEach(item => {
                 const isDone = item.done;
+                // (v.5) Removed createdBy
+
+                // (v.6) Added border-b for mobile clarity
+                // (v.7) Re-arranged buttons
                 list.innerHTML += `
-                    <li class="flex justify-between items-center p-2 hover:bg-slate-50 rounded-md group border-b border-gray-100">
-                        <div class="flex items-center flex-grow mr-2 min-w-0"> <!-- (v.7) Added min-w-0 for ellipsis -->
-                            <span class="${isDone ? 'text-gray-500' : 'text-gray-800'} truncate" title="${item.name}">${item.name}</span>
+                    <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md group border-b border-gray-100">
+                        <div class="flex items-center flex-grow mr-2">
+                            <span class="${isDone ? 'text-gray-500 line-through' : 'text-gray-800'}">${item.name}</span>
                             
-                            <!-- (v.6) Edit/Delete buttons next to text, appear on hover -->
-                            <div class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                <button onclick="window.app.editChecklistItem('${item.id}')" 
-                                    class="text-xs text-indigo-500 hover:underline">แก้ไข</button>
+                            <!-- (v.7) Edit/Delete buttons moved here, appear on hover -->
+                            <div class="flex-shrink-0 ml-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="window.app.editChecklistItem('${item.id}')"
+                                    class="text-blue-500 hover:text-blue-700 text-xs font-medium">แก้ไข</button>
                                 <button onclick="window.app.removeChecklistItem('${item.id}')" 
-                                    class="ml-1 text-xs text-red-500 hover:underline">ลบ</button>
+                                    class="text-red-500 hover:text-red-700 text-xs font-medium ml-2">ลบ</button>
                             </div>
                         </div>
 
-                        <!-- (v.6) Toggle button on the far right -->
+                        <!-- (v.7) Status button remains on the far right -->
                         <div class="flex-shrink-0">
                             <button onclick="window.app.toggleChecklistItem('${item.id}', ${!isDone})" 
                                     class="px-2 py-1 text-sm text-white rounded-md transition-all duration-200 ease-in-out
@@ -521,8 +599,7 @@
             });
         }
 
-
-        // --- RENDER EXPENSES (v.5 - Edit/Delete added) ---
+        // --- RENDER EXPENSES ---
         function renderExpenses(expenses) {
             const list = document.getElementById('expenses-list');
             const total = document.getElementById('expenses-total');
@@ -534,31 +611,38 @@
 
             let sum = 0;
             expenses.forEach(exp => {
+                // (v.5) Removed createdBy
+                
+                // (v.6) Added border-b for mobile clarity
                 list.innerHTML += `
-                    <li class="flex justify-between items-center p-2 hover:bg-slate-50 rounded-md group border-b border-gray-100">
-                        <div class="truncate" title="${exp.name}">
+                    <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md group border-b border-gray-100">
+                        <div>
                             <span>${exp.name}</span>
                         </div>
-                        <div class="flex items-center gap-2 flex-shrink-0">
+                        <div class="flex items-center gap-2">
                             <span class="${exp.amount >= 0 ? 'text-gray-700' : 'text-red-600'} font-medium text-right">
                                 ${exp.amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })} ${exp.currency}
                             </span>
-                            <!-- Edit/Delete buttons -->
-                            <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="window.app.editExpenseItem('${exp.id}')" 
-                                    class="ml-1 text-xs text-indigo-500 hover:underline">แก้ไข</button>
+                            
+                            <!-- (v.5) Edit/Delete Buttons -->
+                            <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="window.app.editExpenseItem('${exp.id}')"
+                                    class="text-blue-500 hover:text-blue-700 text-xs font-medium">แก้ไข</button>
                                 <button onclick="window.app.removeExpenseItem('${exp.id}')" 
-                                    class="ml-1 text-xs text-red-500 hover:underline">ลบ</button>
+                                    class="ml-1 text-red-500 hover:text-red-700 text-xs font-medium">ลบ</button>
                             </div>
                         </div>
                     </li>
                 `;
-                sum += exp.amount;
+                // (v.7) Ensure currency is THB for summation, default to 0 if not
+                if (exp.currency === "THB") {
+                    sum += (exp.amount || 0);
+                }
             });
             total.textContent = `ยอดรวม: ${sum.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท`;
         }
         
-        // --- RENDER POI (v.5 - Edit/Delete added) ---
+        // --- RENDER POI ---
         function renderPOI(poiCatalog) {
             const list = document.getElementById('poi-list');
             if (!list) return;
@@ -567,16 +651,19 @@
                 const notesHtml = poi.notes 
                     ? `<p class="text-sm text-gray-600 mt-1"><em>โน้ต: ${poi.notes}</em></p>` 
                     : '';
+                // (v.5) Removed createdBy
 
+                // (v.6) Added border-b for mobile clarity
                 list.innerHTML += `
-                    <li class="p-2 border-b border-gray-100 hover:bg-slate-50 group">
-                        <div class="flex justify-between items-start">
+                    <li class="p-2 border-b border-gray-100 hover:bg-gray-50 group">
+                        <div class="flex justify-between items-center">
                             <span class="font-medium">${poi.name}</span>
-                            <a href="${poi.mapLink}" target="_blank" class="text-indigo-600 hover:underline text-sm flex-shrink-0 ml-2">แผนที่</a>
+                            <a href="${poi.mapLink}" target="_blank" class="text-blue-600 hover:underline text-sm">แผนที่</a>
                         </div>
                         ${notesHtml}
+                        <!-- (v.5) Edit/Delete Buttons -->
                         <div class="flex gap-3 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onclick="window.app.editPOI('${poi.id}')" class="text-xs text-indigo-500 hover:underline">แก้ไข</button>
+                            <button onclick="window.app.editPOI('${poi.id}')" class="text-xs text-blue-500 hover:underline">แก้ไข</button>
                             <button onclick="window.app.removePOI('${poi.id}')" class="text-xs text-red-500 hover:underline">ลบ</button>
                         </div>
                     </li>
@@ -588,11 +675,17 @@
 
         async function updateItinerary(newItinerary) {
             try {
-                const docRef = doc(db, "tripPlans", tripDocId);
+                // (v.7) Use full path
+                const docRef = doc(db, docRefPath);
                 await updateDoc(docRef, { dailyItinerary: newItinerary });
             } catch (error) {
                 displayError("ไม่สามารถอัปเดตแผนรายวันได้", error);
             }
+        }
+        
+        // (v.7) Helper to get doc ref
+        function getTripDocRef() {
+            return doc(db, docRefPath);
         }
 
         function toggleDayHeaderEdit(dayIndex, event, isEditing) {
@@ -625,6 +718,8 @@
 
             toggleDayHeaderEdit(dayIndex, null, false);
             
+            const oldItinerary = JSON.parse(JSON.stringify(appData.dailyItinerary)); // Deep copy for rollback
+
             try {
                 const newItinerary = appData.dailyItinerary.map((day, index) => {
                     if (index === dayIndex) {
@@ -632,22 +727,31 @@
                     }
                     return day;
                 });
+                
+                // Optimistic UI update
+                appData.dailyItinerary[dayIndex].day = newTitle;
+                renderDailyItinerary(appData.dailyItinerary, appData.poiCatalog);
+
                 await updateItinerary(newItinerary);
             } catch (error) {
+                // Rollback if error
+                appData.dailyItinerary = oldItinerary;
+                renderDailyItinerary(appData.dailyItinerary, appData.poiCatalog);
                 displayError("Update Day Header Failed", error);
             }
         }
 
-        // (v.6) Adapted for Dropdown Time
         function editDailyItem(dayIndex, itemId) {
             const item = appData.dailyItinerary[dayIndex].items.find(i => i.id === itemId);
             if (!item) return;
 
             currentEdit = { dayIndex, itemId, checklistId: null, expenseId: null, poiId: null };
             
+            // (v.7) Set dropdown values
             const [hour, minute] = item.time.split(':');
-            document.getElementById(`item-hour-${dayIndex}`).value = hour;
-            document.getElementById(`item-minute-${dayIndex}`).value = minute || '00'; // Handle missing minute
+            document.getElementById(`item-hour-${dayIndex}`).value = hour || '09';
+            document.getElementById(`item-minute-${dayIndex}`).value = minute || '00';
+            
             document.getElementById(`item-text-${dayIndex}`).value = item.text;
 
             document.getElementById(`add-item-btn-${dayIndex}`).classList.add('hidden');
@@ -660,13 +764,13 @@
             formInput.focus();
             formInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-        
-        // (v.6) Adapted for Dropdown Time
+
         function cancelEdit(dayIndex) {
             currentEdit = { dayIndex: null, itemId: null, checklistId: null, expenseId: null, poiId: null };
             
-            document.getElementById(`item-hour-${dayIndex}`).value = '09'; // Default hour
-            document.getElementById(`item-minute-${dayIndex}`).value = '00'; // Default minute
+            // (v.7) Reset dropdowns
+            document.getElementById(`item-hour-${dayIndex}`).value = '09';
+            document.getElementById(`item-minute-${dayIndex}`).value = '00';
             document.getElementById(`item-text-${dayIndex}`).value = '';
 
             document.getElementById(`add-item-btn-${dayIndex}`).classList.remove('hidden');
@@ -674,11 +778,11 @@
             document.getElementById(`cancel-edit-btn-${dayIndex}`).classList.add('hidden');
         }
 
-        // (v.6) Adapted for Dropdown Time
         async function updateDailyItem() {
             const { dayIndex, itemId } = currentEdit;
             if (dayIndex === null || !itemId) return;
 
+            // (v.7) Get values from dropdowns
             const hourInput = document.getElementById(`item-hour-${dayIndex}`);
             const minuteInput = document.getElementById(`item-minute-${dayIndex}`);
             const textInput = document.getElementById(`item-text-${dayIndex}`);
@@ -687,7 +791,7 @@
             const newText = textInput.value.trim();
 
             if (!newText) {
-                displayError("กรุณาใส่รายละเอียดกิจกรรม", null);
+                displayError("กรุณาใส่รายละเอียดกิจกรรม");
                 return;
             }
             
@@ -709,8 +813,8 @@
             await updateItinerary(newItinerary); 
         }
 
-        // (v.6) Adapted for Dropdown Time
         async function addDailyItem(dayIndex) {
+            // (v.7) Get values from dropdowns
             const hourInput = document.getElementById(`item-hour-${dayIndex}`);
             const minuteInput = document.getElementById(`item-minute-${dayIndex}`);
             const textInput = document.getElementById(`item-text-${dayIndex}`);
@@ -720,14 +824,15 @@
             const text = textInput.value.trim();
 
             if (!text) {
-                displayError("กรุณาใส่รายละเอียดกิจกรรม", null);
+                displayError("กรุณาใส่รายละเอียดกิจกรรม");
                 return;
             }
 
             const newItem = {
                 id: `item${Date.now()}`,
                 time: time,
-                text: text
+                text: text,
+                createdBy: userDisplayName 
             };
 
             const newItinerary = appData.dailyItinerary.map((day, index) => {
@@ -740,8 +845,6 @@
             
             await updateItinerary(newItinerary);
             textInput.value = '';
-            hourInput.value = '09';
-            minuteInput.value = '00';
         }
         
         async function removeDailyItem(dayIndex, itemId) {
@@ -763,11 +866,12 @@
             const newDayNum = appData.dailyItinerary.length + 1;
             const newDay = {
                 day: `วันที่ ${newDayNum} (ระบุวันที่)`,
-                items: []
+                items: [],
+                createdBy: userDisplayName 
             };
             
             try {
-                const docRef = doc(db, "tripPlans", tripDocId);
+                const docRef = getTripDocRef();
                 await updateDoc(docRef, {
                     dailyItinerary: arrayUnion(newDay)
                 });
@@ -795,7 +899,62 @@
             }
         }
 
-        // --- EXPENSE FUNCTIONS (v.5 - Edit/Cancel added) ---
+        // --- EXPENSE FUNCTIONS (v.5 - Edit/Update) ---
+
+        function resetExpenseForm() {
+            document.getElementById('expense-name').value = '';
+            document.getElementById('expense-amount').value = '';
+            document.getElementById('add-expense-btn').classList.remove('hidden');
+            document.getElementById('update-expense-btn').classList.add('hidden');
+            document.getElementById('cancel-expense-btn').classList.add('hidden');
+            currentEdit.expenseId = null;
+        }
+
+        function editExpenseItem(id) {
+            const item = appData.expenses.find(i => i.id === id);
+            if (!item) return;
+            
+            currentEdit.expenseId = id;
+            document.getElementById('expense-name').value = item.name;
+            document.getElementById('expense-amount').value = item.amount;
+
+            document.getElementById('add-expense-btn').classList.add('hidden');
+            document.getElementById('update-expense-btn').classList.remove('hidden');
+            document.getElementById('cancel-expense-btn').classList.remove('hidden');
+            
+            document.getElementById('expense-name').focus();
+        }
+
+        async function updateExpenseItem() {
+            const { expenseId } = currentEdit;
+            if (!expenseId) return;
+
+            const nameInput = document.getElementById('expense-name');
+            const amountInput = document.getElementById('expense-amount');
+            const name = nameInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+
+            if (!name || isNaN(amount)) {
+                displayError("กรุณากรอกชื่อและจำนวนเงินให้ถูกต้อง");
+                return;
+            }
+
+            const newExpenses = appData.expenses.map(item => {
+                if (item.id === expenseId) {
+                    return { ...item, name: name, amount: amount, updatedBy: userDisplayName };
+                }
+                return item;
+            });
+
+            try {
+                const docRef = getTripDocRef();
+                await updateDoc(docRef, { expenses: newExpenses });
+                resetExpenseForm();
+            } catch (error) {
+                displayError("ไม่สามารถอัปเดตรายจ่ายได้", error);
+            }
+        }
+
         async function addExpense() {
             const nameInput = document.getElementById('expense-name');
             const amountInput = document.getElementById('expense-amount');
@@ -804,120 +963,104 @@
             const name = nameInput.value.trim();
             const amount = parseFloat(amountInput.value);
 
-            if (!name || isNaN(amount)) {
-                displayError("กรุณากรอกชื่อและจำนวนเงิน", null);
-                return;
-            }
-            
-            // --- IF EDITING ---
-            if (currentEdit.expenseId) {
-                const newExpenses = appData.expenses.map(exp => {
-                    if (exp.id === currentEdit.expenseId) {
-                        return { ...exp, name: name, amount: amount };
-                    }
-                    return exp;
-                });
-                try {
-                    const docRef = doc(db, "tripPlans", tripDocId);
-                    await updateDoc(docRef, { expenses: newExpenses });
-                    cancelEditExpense();
-                } catch (error) {
-                    displayError("ไม่สามารถอัปเดตรายจ่ายได้", error);
-                }
-            } 
-            // --- IF ADDING NEW ---
-            else {
+            if (name && !isNaN(amount)) {
                 const newExpense = {
                     id: `exp${Date.now()}`,
                     name: name,
                     amount: amount,
-                    currency: "THB"
+                    currency: "THB",
+                    createdBy: userDisplayName 
                 };
                 try {
-                    const docRef = doc(db, "tripPlans", tripDocId);
+                    const docRef = getTripDocRef();
                     await updateDoc(docRef, { expenses: arrayUnion(newExpense) });
                     nameInput.value = '';
                     amountInput.value = '';
                 } catch (error) {
                     displayError("ไม่สามารถเพิ่มรายจ่ายได้", error);
                 }
+            } else {
+                displayError("กรุณากรอกชื่อและจำนวนเงิน");
             }
         }
         
-        function editExpenseItem(id) {
-            const item = appData.expenses.find(i => i.id === id);
-            if (!item) return;
-            
-            currentEdit = { dayIndex: null, itemId: null, checklistId: null, expenseId: id, poiId: null };
-
-            document.getElementById('expense-name').value = item.name;
-            document.getElementById('expense-amount').value = item.amount;
-            
-            document.getElementById('add-expense-btn').textContent = "✓ บันทึกรายจ่าย";
-            document.getElementById('add-expense-btn').classList.replace('bg-indigo-600', 'bg-green-600');
-            document.getElementById('add-expense-btn').classList.replace('hover:bg-indigo-700', 'hover:bg-green-700');
-            document.getElementById('cancel-expense-btn').classList.remove('hidden');
-            
-            document.getElementById('expense-name').focus();
-        }
-
-        function cancelEditExpense() {
-            currentEdit = { dayIndex: null, itemId: null, checklistId: null, expenseId: null, poiId: null };
-            
-            document.getElementById('expense-name').value = '';
-            document.getElementById('expense-amount').value = '';
-
-            document.getElementById('add-expense-btn').textContent = "บันทึกรายจ่าย";
-            document.getElementById('add-expense-btn').classList.replace('bg-green-600', 'bg-indigo-600');
-            document.getElementById('add-expense-btn').classList.replace('hover:bg-green-700', 'hover:bg-indigo-700');
-            document.getElementById('cancel-expense-btn').classList.add('hidden');
-        }
-
         async function removeExpenseItem(id) {
             if (!appData) return;
             const itemToRemove = appData.expenses.find(item => item.id === id);
             if (itemToRemove) {
                 try {
-                    const docRef = doc(db, "tripPlans", tripDocId);
+                    const docRef = getTripDocRef();
                     await updateDoc(docRef, { expenses: arrayRemove(itemToRemove) });
                 } catch (error) {
                     displayError("ไม่สามารถลบรายจ่ายได้", error);
                 }
             }
         }
+        
+        // --- CHECKLIST FUNCTIONS (v.5 - Edit/Update) ---
+        
+        function resetChecklistForm() {
+            document.getElementById('checklist-name').value = '';
+            document.getElementById('add-checklist-btn').classList.remove('hidden');
+            document.getElementById('update-checklist-btn').classList.add('hidden');
+            document.getElementById('cancel-checklist-btn').classList.add('hidden');
+            currentEdit.checklistId = null;
+        }
 
-        // --- CHECKLIST FUNCTIONS (v.5 - Edit/Cancel added) ---
+        function editChecklistItem(id) {
+            const item = appData.checklist.find(i => i.id === id);
+            if (!item) return;
+            
+            currentEdit.checklistId = id;
+            document.getElementById('checklist-name').value = item.name;
+            
+            document.getElementById('add-checklist-btn').classList.add('hidden');
+            document.getElementById('update-checklist-btn').classList.remove('hidden');
+            document.getElementById('cancel-checklist-btn').classList.remove('hidden');
+            
+            document.getElementById('checklist-name').focus();
+        }
+
+        async function updateChecklistItem() {
+            const { checklistId } = currentEdit;
+            if (!checklistId) return;
+
+            const input = document.getElementById('checklist-name');
+            const name = input.value.trim();
+            if (!name) {
+                displayError("กรุณาใส่ชื่อรายการ");
+                return;
+            }
+
+            const newChecklist = appData.checklist.map(item => {
+                if (item.id === checklistId) {
+                    return { ...item, name: name, updatedBy: userDisplayName };
+                }
+                return item;
+            });
+
+            try {
+                const docRef = getTripDocRef();
+                await updateDoc(docRef, { checklist: newChecklist });
+                resetChecklistForm();
+            } catch (error) {
+                displayError("ไม่สามารถอัปเดต Checklist ได้", error);
+            }
+        }
+
         async function addChecklistItem() {
             const input = document.getElementById('checklist-name');
             if (!input) return;
             const name = input.value.trim();
-            if (!name) return;
-
-            // --- IF EDITING ---
-            if (currentEdit.checklistId) {
-                const newChecklist = appData.checklist.map(item => {
-                    if (item.id === currentEdit.checklistId) {
-                        return { ...item, name: name };
-                    }
-                    return item;
-                });
-                try {
-                    const docRef = doc(db, "tripPlans", tripDocId);
-                    await updateDoc(docRef, { checklist: newChecklist });
-                    cancelEditChecklist();
-                } catch (error) {
-                    displayError("ไม่สามารถอัปเดต Checklist ได้", error);
-                }
-            }
-            // --- IF ADDING NEW ---
-            else {
+            if (name) {
                 const newItem = {
                     id: `chk${Date.now()}`,
                     name: name,
-                    done: false
+                    done: false,
+                    createdBy: userDisplayName 
                 };
                 try {
-                    const docRef = doc(db, "tripPlans", tripDocId);
+                    const docRef = getTripDocRef();
                     await updateDoc(docRef, { checklist: arrayUnion(newItem) });
                     input.value = '';
                 } catch (error) {
@@ -926,31 +1069,6 @@
             }
         }
         
-        function editChecklistItem(id) {
-            const item = appData.checklist.find(i => i.id === id);
-            if (!item) return;
-
-            currentEdit = { dayIndex: null, itemId: null, checklistId: id, expenseId: null, poiId: null };
-
-            document.getElementById('checklist-name').value = item.name;
-            document.getElementById('add-checklist-btn').textContent = "✓ บันทึก";
-            document.getElementById('add-checklist-btn').classList.replace('bg-indigo-600', 'bg-green-600');
-            document.getElementById('add-checklist-btn').classList.replace('hover:bg-indigo-700', 'hover:bg-green-700');
-            document.getElementById('cancel-checklist-btn').classList.remove('hidden');
-
-            document.getElementById('checklist-name').focus();
-        }
-
-        function cancelEditChecklist() {
-            currentEdit = { dayIndex: null, itemId: null, checklistId: null, expenseId: null, poiId: null };
-
-            document.getElementById('checklist-name').value = '';
-            document.getElementById('add-checklist-btn').textContent = "เพิ่ม";
-            document.getElementById('add-checklist-btn').classList.replace('bg-green-600', 'bg-indigo-600');
-            document.getElementById('add-checklist-btn').classList.replace('hover:bg-green-700', 'hover:bg-indigo-700');
-            document.getElementById('cancel-checklist-btn').classList.add('hidden');
-        }
-
         async function toggleChecklistItem(id, isDone) {
             if (!appData) return;
             const newChecklist = appData.checklist.map(item => {
@@ -960,7 +1078,7 @@
                 return item;
             });
             try {
-                const docRef = doc(db, "tripPlans", tripDocId);
+                const docRef = getTripDocRef();
                 await updateDoc(docRef, { checklist: newChecklist });
             } catch (error) {
                 displayError("ไม่สามารถอัปเดต Checklist ได้", error);
@@ -972,7 +1090,7 @@
             const itemToRemove = appData.checklist.find(item => item.id === id);
             if (itemToRemove) {
                 try {
-                    const docRef = doc(db, "tripPlans", tripDocId);
+                    const docRef = getTripDocRef();
                     await updateDoc(docRef, { checklist: arrayRemove(itemToRemove) });
                 } catch (error) {
                     displayError("ไม่สามารถลบรายการ Checklist ได้", error);
@@ -980,7 +1098,113 @@
             }
         }
 
-        // --- (v.7) Gemini API Helper: fetchWithRetry ---
+        // --- POI FUNCTIONS (v.5 - Edit/Update) ---
+        
+        function resetPoiForm() {
+            document.getElementById('poi-name').value = '';
+            document.getElementById('poi-link').value = '';
+            document.getElementById('poi-notes').value = '';
+            document.getElementById('add-poi-btn').classList.remove('hidden');
+            document.getElementById('update-poi-btn').classList.add('hidden');
+            document.getElementById('cancel-poi-btn').classList.add('hidden');
+            currentEdit.poiId = null;
+        }
+
+        function editPOI(id) {
+            const item = appData.poiCatalog.find(i => i.id === id);
+            if (!item) return;
+
+            currentEdit.poiId = id;
+            document.getElementById('poi-name').value = item.name;
+            document.getElementById('poi-link').value = item.mapLink;
+            document.getElementById('poi-notes').value = item.notes || '';
+            
+            document.getElementById('add-poi-btn').classList.add('hidden');
+            document.getElementById('update-poi-btn').classList.remove('hidden');
+            document.getElementById('cancel-poi-btn').classList.remove('hidden');
+            
+            document.getElementById('poi-link').focus();
+            document.getElementById('poi-link').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        async function updatePOI() {
+            const { poiId } = currentEdit;
+            if (!poiId) return;
+            
+            const nameInput = document.getElementById('poi-name');
+            const linkInput = document.getElementById('poi-link');
+            const notesInput = document.getElementById('poi-notes'); 
+
+            const name = nameInput.value.trim();
+            const mapLink = linkInput.value.trim();
+            const notes = notesInput.value.trim(); 
+
+            if (!name || !mapLink) {
+                displayError("กรุณาใส่ลิงก์และชื่อสถานที่");
+                return;
+            }
+
+            const newPoiCatalog = appData.poiCatalog.map(item => {
+                if (item.id === poiId) {
+                    return { ...item, name, mapLink, notes, updatedBy: userDisplayName };
+                }
+                return item;
+            });
+
+            try {
+                const docRef = getTripDocRef();
+                await updateDoc(docRef, { poiCatalog: newPoiCatalog });
+                resetPoiForm();
+            } catch (error) {
+                displayError("ไม่สามารถอัปเดต POI ได้", error);
+            }
+        }
+
+        async function addPOI() {
+            const nameInput = document.getElementById('poi-name');
+            const linkInput = document.getElementById('poi-link');
+            const notesInput = document.getElementById('poi-notes'); 
+            if (!nameInput || !linkInput || !notesInput) return;
+
+            const name = nameInput.value.trim();
+            const mapLink = linkInput.value.trim();
+            const notes = notesInput.value.trim(); 
+
+            if (name && mapLink) {
+                const newPOI = {
+                    id: `poi${Date.now()}`,
+                    name: name,
+                    mapLink: mapLink,
+                    notes: notes,
+                    createdBy: userDisplayName 
+                };
+                try {
+                    const docRef = getTripDocRef();
+                    await updateDoc(docRef, { poiCatalog: arrayUnion(newPOI) });
+                    resetPoiForm();
+                } catch (error) {
+                    displayError("ไม่สามารถเพิ่ม POI ได้", error);
+                }
+            } else {
+                displayError("กรุณาใส่ลิงก์และชื่อสถานที่");
+            }
+        }
+
+        async function removePOI(id) {
+            if (!appData) return;
+            const poiToRemove = appData.poiCatalog.find(poi => poi.id === id);
+            if (poiToRemove) {
+                try {
+                    const docRef = getTripDocRef();
+                    await updateDoc(docRef, { poiCatalog: arrayRemove(poiToRemove) });
+                } catch (error) {
+                    displayError("ไม่สามารถลบ POI ได้", error);
+                }
+            }
+        }
+        
+        // --- (v.7) Gemini API Functions ---
+        
         /**
          * Fetches a URL with exponential backoff for retries.
          * @param {string} url - The URL to fetch.
@@ -999,9 +1223,8 @@
                     if (response.status === 429 || response.status >= 500) {
                         console.warn(`Attempt ${i + 1}/${retries}: Received status ${response.status}. Retrying in ${delay}ms...`);
                         await new Promise(res => setTimeout(res, delay));
-                        delay *= 2; // Increase delay
+                        delay *= 2; 
                     } else {
-                        // Don't retry for other client-side errors (e.g., 400, 403)
                         return response;
                     }
                 } catch (error) {
@@ -1014,50 +1237,50 @@
             }
             throw new Error('Failed to fetch after all retries.');
         };
-        
-        // --- (v.7) POI FUNCTION: analyzeMapLink (NEW) ---
+
         async function analyzeMapLink() {
             const linkInput = document.getElementById('poi-link');
-            const url = linkInput.value.trim();
-            if (!url) {
-                displayError("กรุณาวางลิงก์ Google Maps ก่อนครับ", null);
+            const nameInput = document.getElementById('poi-name');
+            const notesInput = document.getElementById('poi-notes');
+            const analyzeBtn = document.getElementById('analyze-poi-btn');
+            const analyzeBtnText = document.getElementById('analyze-poi-btn-text');
+            const analyzeBtnSpinner = document.getElementById('analyze-poi-btn-spinner');
+
+            const mapLink = linkInput.value.trim();
+            if (!mapLink) {
+                displayError("กรุณาวางลิงก์ Google Maps ก่อน");
                 return;
             }
             
-            displayError(null); // Clear previous errors
-            const aiButton = document.getElementById('ai-poi-btn');
-            const aiButtonText = document.getElementById('ai-poi-btn-text');
-            const aiButtonSpinner = document.getElementById('ai-poi-btn-spinner');
+            if (!geminiApiKey && (typeof __app_id === 'undefined')) {
+                displayError("ไม่พบ API Key สำหรับ Gemini", "Please set geminiApiKey in the script.");
+                return;
+            }
 
-            // --- Set Loading State ---
-            aiButton.disabled = true;
-            aiButtonText.classList.add('hidden');
-            aiButtonSpinner.classList.remove('hidden');
+            displayError(null); // Clear previous errors
+            analyzeBtn.disabled = true;
+            analyzeBtnText.classList.add('hidden');
+            analyzeBtnSpinner.classList.remove('hidden');
 
             try {
-                const model = "gemini-2.5-flash-preview-09-2025";
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
-
-                const systemPrompt = `คุณคือผู้ช่วยจัดการการเดินทาง หน้าที่ของคุณคือดึงข้อมูลสถานที่จากลิงก์ Google Maps ที่ให้มา และตอบกลับเป็น JSON ที่มีโครงสร้าง {"name": "ชื่อสถานที่", "notes": "คำอธิบายสั้นๆ เกี่ยวกับสถานที่ (เช่น 'ราเม็ง 24 ชม.' หรือ 'วัดดังในเกียวโต')"} เสมอ`;
-                const userQuery = `นี่คือลิงก์ Google Maps: ${url} กรุณาให้ข้อมูลสถานที่ตามที่ร้องขอ`;
+                // (v.7) Updated prompt: Removed JSON mode, using text parser
+                const systemPrompt = `You are an expert travel assistant. Analyze the following Google Maps link.
+1. Use the Google Search tool to find the official name of the place.
+2. Generate a concise, one-sentence note about what this place is (e.g., "Famous ramen restaurant", "Historic temple", "Shopping street").
+3. Respond ONLY with a valid JSON object string in the format: {"name": "Official Name", "notes": "One-sentence description"}.
+Do NOT include any text before or after the JSON object.`;
 
                 const payload = {
-                    contents: [{ parts: [{ text: userQuery }] }],
-                    tools: [{ "google_search": {} }],
-                    systemInstruction: { parts: [{ text: systemPrompt }] },
-                    generationConfig: {
-                        responseMimeType: "application/json",
-                        responseSchema: {
-                            type: "OBJECT",
-                            properties: {
-                                "name": { "type": "STRING" },
-                                "notes": { "type": "STRING" }
-                            }
-                        }
-                    }
+                    contents: [{
+                        parts: [{ text: `Google Maps Link: ${mapLink}` }]
+                    }],
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
+                    tools: [{ "google_search": {} }] // Enable Google Search
                 };
 
-                const response = await fetchWithRetry(apiUrl, {
+                const response = await fetchWithRetry(geminiApiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -1068,136 +1291,53 @@
                     const errorMsg = errorBody?.error?.message || `HTTP error! status: ${response.status}`;
                     throw new Error(errorMsg);
                 }
-                
+
                 const result = await response.json();
 
                 if (!result.candidates || !result.candidates[0].content || !result.candidates[0].content.parts[0].text) {
                     throw new Error('Invalid response structure from AI.');
                 }
                 
-                const rawJson = result.candidates[0].content.parts[0].text;
-                const parsedData = JSON.parse(rawJson);
+                // (v.7) Parse the text response as JSON
+                const rawText = result.candidates[0].content.parts[0].text;
+                let parsedJson;
+                try {
+                    // Gemini might wrap the JSON in ```json ... ```
+                    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                    if (!jsonMatch) throw new Error("No JSON object found in AI response.");
+                    parsedJson = JSON.parse(jsonMatch[0]);
+                } catch (parseError) {
+                    console.error("Failed to parse JSON from AI response:", rawText);
+                    throw new Error("AI returned invalid JSON format.");
+                }
 
-                if (parsedData.name && parsedData.notes) {
-                    document.getElementById('poi-name').value = parsedData.name;
-                    document.getElementById('poi-notes').value = parsedData.notes;
-                    // Highlight fields
-                    document.getElementById('poi-name').classList.add('bg-green-100');
-                    document.getElementById('poi-notes').classList.add('bg-green-100');
+                // (v.7) Updated logic to allow empty notes
+                if (parsedJson.name) {
+                    nameInput.value = parsedJson.name;
+                    notesInput.value = parsedJson.notes || ''; // Allow empty notes
+                    
+                    // Highlight success
+                    nameInput.classList.add('bg-green-100');
+                    notesInput.classList.add('bg-green-100');
                     setTimeout(() => {
-                        document.getElementById('poi-name').classList.remove('bg-green-100');
-                        document.getElementById('poi-notes').classList.remove('bg-green-100');
+                        nameInput.classList.remove('bg-green-100');
+                        notesInput.classList.remove('bg-green-100');
                     }, 1500);
                 } else {
-                    throw new Error('AI response did not contain name or notes.');
+                    // This handles the case where JSON is valid but 'name' is missing
+                    throw new Error('AI response did not contain a "name" field.');
                 }
 
             } catch (error) {
+                console.error("Gemini Analyze Error:", error);
                 displayError("ไม่สามารถวิเคราะห์ลิงก์ได้", error);
             } finally {
-                // --- Unset Loading State ---
-                aiButton.disabled = false;
-                aiButtonText.classList.remove('hidden');
-                aiButtonSpinner.classList.add('hidden');
+                analyzeBtn.disabled = false;
+                analyzeBtnText.classList.remove('hidden');
+                analyzeBtnSpinner.classList.add('hidden');
             }
         }
 
-
-        // --- POI FUNCTIONS (v.7 - Gemini function attached) ---
-        async function addPOI() {
-            const nameInput = document.getElementById('poi-name');
-            const linkInput = document.getElementById('poi-link');
-            const notesInput = document.getElementById('poi-notes'); 
-            if (!nameInput || !linkInput || !notesInput) return;
-
-            const name = nameInput.value.trim();
-            const mapLink = linkInput.value.trim();
-            const notes = notesInput.value.trim(); 
-
-            if (!name || !mapLink) {
-                displayError("กรุณาใส่ลิงก์และชื่อสถานที่", null);
-                return;
-            }
-
-            // --- IF EDITING ---
-            if (currentEdit.poiId) {
-                const newCatalog = appData.poiCatalog.map(poi => {
-                    if (poi.id === currentEdit.poiId) {
-                        return { ...poi, name: name, mapLink: mapLink, notes: notes };
-                    }
-                    return poi;
-                });
-                try {
-                    const docRef = doc(db, "tripPlans", tripDocId);
-                    await updateDoc(docRef, { poiCatalog: newCatalog });
-                    cancelEditPOI();
-                } catch (error) {
-                    displayError("ไม่สามารถอัปเดต POI ได้", error);
-                }
-            }
-            // --- IF ADDING NEW ---
-            else {
-                const newPOI = {
-                    id: `poi${Date.now()}`,
-                    name: name,
-                    mapLink: mapLink,
-                    notes: notes
-                };
-                try {
-                    const docRef = doc(db, "tripPlans", tripDocId);
-                    await updateDoc(docRef, { poiCatalog: arrayUnion(newPOI) });
-                    nameInput.value = '';
-                    linkInput.value = '';
-                    notesInput.value = ''; 
-                } catch (error) {
-                    displayError("ไม่สามารถเพิ่ม POI ได้", error);
-                }
-            }
-        }
-
-        function editPOI(id) {
-            const item = appData.poiCatalog.find(i => i.id === id);
-            if (!item) return;
-
-            currentEdit = { dayIndex: null, itemId: null, checklistId: null, expenseId: null, poiId: id };
-
-            document.getElementById('poi-name').value = item.name;
-            document.getElementById('poi-link').value = item.mapLink;
-            document.getElementById('poi-notes').value = item.notes;
-            
-            document.getElementById('add-poi-btn').textContent = "✓ บันทึก POI";
-            document.getElementById('add-poi-btn').classList.replace('bg-indigo-600', 'bg-green-600');
-            document.getElementById('add-poi-btn').classList.replace('hover:bg-indigo-700', 'hover:bg-green-700');
-            document.getElementById('cancel-poi-btn').classList.remove('hidden');
-
-            document.getElementById('poi-name').focus();
-        }
-
-        function cancelEditPOI() {
-            currentEdit = { dayIndex: null, itemId: null, checklistId: null, expenseId: null, poiId: null };
-
-            document.getElementById('poi-name').value = '';
-            document.getElementById('poi-link').value = '';
-            document.getElementById('poi-notes').value = '';
-
-            document.getElementById('add-poi-btn').textContent = "เพิ่มเข้าไดเรกทอรี";
-            document.getElementById('add-poi-btn').classList.replace('bg-green-600', 'bg-indigo-600');
-            document.getElementById('add-poi-btn').classList.replace('hover:bg-green-700', 'hover:bg-indigo-700');
-            document.getElementById('cancel-poi-btn').classList.add('hidden');
-        }
-
-        async function removePOI(id) {
-            if (!appData) return;
-            const poiToRemove = appData.poiCatalog.find(poi => poi.id === id);
-            if (poiToRemove) {
-                try {
-                    const docRef = doc(db, "tripPlans", tripDocId);
-                    await updateDoc(docRef, { poiCatalog: arrayRemove(poiToRemove) });
-                } catch (error) {
-                    displayError("ไม่สามารถลบ POI ได้", error);
-                }
-            }
-        }
 
         // --- Expose functions to global scope for inline onclick ---
         window.app = {
@@ -1208,24 +1348,29 @@
             addDay,
             addPoiToText,
             addExpense,
-            removeExpenseItem,
-            editExpenseItem, 
-            cancelEditExpense, 
+            removeExpenseItem, 
             addChecklistItem,
             toggleChecklistItem,
-            removeChecklistItem,
-            editChecklistItem, 
-            cancelEditChecklist, 
+            removeChecklistItem, 
             addPOI,
             removePOI,
-            editPOI, 
-            cancelEditPOI, 
             toggleDayHeaderEdit, 
             updateDayHeader, 
             editDailyItem,   
             updateDailyItem, 
             cancelEdit,
-            analyzeMapLink // (v.7) Added Gemini function
+            // (v.5) Added edit/update/cancel functions
+            editChecklistItem,
+            updateChecklistItem,
+            resetChecklistForm,
+            editExpenseItem,
+            updateExpenseItem,
+            resetExpenseForm,
+            editPOI,
+            updatePOI,
+            resetPoiForm,
+            // (v.7) Added Gemini function
+            analyzeMapLink
         };
 
         // --- Start Application ---
@@ -1234,23 +1379,25 @@
     </script>
 </head>
 
+<!-- (v.5) Updated body background -->
 <body class="bg-slate-200 font-sans">
     
     <!-- Loading Screen -->
     <div id="loading-screen" class="flex items-center justify-center min-h-screen">
         <div class="flex flex-col items-center">
             <div class="loader"></div>
-            <!-- (v.5) Added pulse animation -->
+            <!-- (v.6) Added pulse animation -->
             <p class="text-gray-600 mt-4 animate-pulse">กำลังโหลดแผนการเดินทาง...</p>
         </div>
     </div>
 
     <!-- Login Screen -->
     <div id="login-screen" class="hidden container mx-auto p-8 max-w-md mt-20 bg-white shadow-lg rounded-lg text-center">
-        <!-- (v.6) Image Removed -->
+        <!-- (v.7) Image Removed -->
         
         <h1 class="text-3xl font-bold text-gray-900 mb-4">Bear Cat In FOK 2025</h1>
         <p class="text-gray-600 mb-6">กรุณาล็อกอินเพื่อเข้าใช้งานแผนการเดินทาง</p>
+        <!-- (v.6) Button theme changed to indigo -->
         <button onclick="window.app.signInWithGoogle()"
             class="w-full px-4 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center justify-center gap-2 transition-all duration-200 ease-in-out">
             <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039L38.485 13.85C34.609 10.323 29.723 8 24 8 12.954 8 4 16.954 4 28s8.954 20 20 20 20-8.954 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691c2.007-4.103 5.703-7.141 10.08-8.974L11.707 10.2C8.618 11.66 6.814 13.06 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-5.02-4.99C30.05 36.1 27.208 38 24 38c-3.882 0-7.23-2.023-9.117-5.034l-5.51 4.83C11.65 41.59 17.51 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.103 4.148-3.94 5.574l5.02 4.99C41.87 35.19 44 30.65 44 26c0-1.341-.138-2.65-.389-3.917z"/></svg>
@@ -1261,15 +1408,13 @@
     <!-- Main Application -->
     <div id="main-app" class="hidden container mx-auto p-4 md:p-8 max-w-7xl">
 
-        <!-- (v.4) COMPACT MOBILE HEADER -->
         <header class="mb-4 bg-white shadow-sm rounded-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
             <div class="flex-grow">
                 <!-- (v.5) Header color changed -->
                 <h1 class="text-xl md:text-2xl font-bold text-indigo-700 leading-tight">Bear Cat In FOK 2025</h1>
-                <!-- Date on new line -->
+                <!-- (v.7) Updated to YYYY -->
                 <p class="text-xs md:text-sm text-gray-500 mt-1">ทริปญี่ปุ่น (Fukuoka → Osaka)<br class="md:hidden"> 27 Dec 2025 - 3 Jan 2026</p>
             </div>
-            <!-- (v.4) Minimalist User/Logout Area -->
             <div class="flex items-center gap-2 mt-2 md:mt-0 self-end md:self-auto">
                 <span id="user-display" class="text-xs text-gray-500"></span>
                 <button id="logout-button" onclick="window.app.signOutApp()"
@@ -1281,7 +1426,7 @@
 
         <!-- Error Message Bar -->
         <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
-            <!-- Error text will be inserted here by displayError() -->
+            <span id="error-message-text"></span>
         </div>
 
         <!-- Main Content Grid -->
@@ -1291,22 +1436,22 @@
             <div class="lg:col-span-2 space-y-6">
 
                 <!-- 1. Daily Itinerary -->
-                <!-- (v.6) Added hover transition -->
+                <!-- (v.7) Added card hover animation -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
                     <!-- (v.5) Header color changed -->
                     <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">🗺️ แผนการเดินทางรายวัน</h2>
-                    <div id="daily-itinerary-container" class="p-5 space-y-2 bg-white">
+                    <div id="daily-itinerary-container" class="p-5 space-y-2">
                         <!-- Daily itinerary items will be rendered here -->
                     </div>
                     <div class="p-5 border-t border-gray-200">
-                        <button onclick="window.app.addDay()" class="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">
+                        <button onclick="window.app.addDay()" class="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-all duration-200 ease-in-out">
                             + เพิ่มวันเดินทางใหม่
                         </button>
                     </div>
                 </div>
 
                 <!-- 2. Accommodation -->
-                <!-- (v.6) Added hover transition -->
+                <!-- (v.7) Added card hover animation -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
                     <!-- (v.5) Header color changed -->
                     <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">🏨 ที่พักที่จองแล้ว</h2>
@@ -1316,7 +1461,7 @@
                 </div>
 
                 <!-- 3. Flight Info -->
-                <!-- (v.6) Added hover transition -->
+                <!-- (v.7) Added card hover animation -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
                     <!-- (v.5) Header color changed -->
                     <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">✈️ ข้อมูลเที่ยวบินหลัก</h2>
@@ -1330,8 +1475,8 @@
             <!-- Right Column (Sidebar) -->
             <div class="space-y-6">
 
-                <!-- 1. Checklist (Stable) -->
-                <!-- (v.6) Added hover transition -->
+                <!-- 1. Checklist -->
+                <!-- (v.7) Added card hover animation -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
                     <!-- (v.5) Header color changed -->
                     <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">📋 รายการที่ต้องทำ</h2>
@@ -1341,24 +1486,23 @@
                         </ul>
                         <p id="no-checklist" class="text-gray-500 text-sm hidden">ไม่มีรายการ</p>
 
-                        <!-- (v.5) Mobile friendly form, Edit/Cancel buttons -->
-                        <div class="mt-4 border-t pt-4">
-                            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                                <input type="text" id="checklist-name" placeholder="เพิ่ม/แก้ไข รายการ"
-                                    class="flex-grow p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
-                                <button id="add-checklist-btn" onclick="window.app.addChecklistItem()"
-                                    class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">เพิ่ม</button>
-                            </div>
-                            <button id="cancel-checklist-btn" onclick="window.app.cancelEditChecklist()"
-                                class="hidden w-full sm:w-auto mt-2 px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-all duration-200 ease-in-out">
-                                ยกเลิกการแก้ไข
-                            </button>
+                        <!-- (v.5) Updated form for Edit/Update -->
+                        <div class="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 border-t pt-4">
+                            <input type="text" id="checklist-name" placeholder="เพิ่ม/แก้ไข รายการ"
+                                class="flex-grow p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
+                            <!-- (v.6) Button theme changed to indigo -->
+                            <button id="add-checklist-btn" onclick="window.app.addChecklistItem()"
+                                class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">เพิ่ม</button>
+                            <button id="update-checklist-btn" onclick="window.app.updateChecklistItem()"
+                                class="hidden px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-all duration-200 ease-in-out">บันทึก</button>
+                            <button id="cancel-checklist-btn" onclick="window.app.resetChecklistForm()"
+                                class="hidden px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-all duration-200 ease-in-out">ยกเลิก</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- 2. Expenses (Stable) -->
-                <!-- (v.6) Added hover transition -->
+                <!-- 2. Expenses -->
+                <!-- (v.7) Added card hover animation -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
                     <!-- (v.5) Header color changed -->
                     <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">💸 รายจ่าย</h2>
@@ -1372,24 +1516,25 @@
                             <h3 id="expenses-total" class="text-lg font-semibold text-right text-gray-800">ยอดรวม: 0.00 บาท</h3>
                         </div>
 
-                        <!-- (v.5) Edit/Cancel buttons -->
+                        <!-- (v.5) Updated form for Edit/Update -->
                         <div class="mt-4 space-y-2">
                             <input type="text" id="expense-name" placeholder="ชื่อรายการ"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
                             <input type="number" id="expense-amount" placeholder="จำนวนเงิน (บาท)"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
+                            <!-- (v.6) Button theme changed to indigo -->
                             <button id="add-expense-btn" onclick="window.app.addExpense()"
                                 class="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">บันทึกรายจ่าย</button>
-                            <button id="cancel-expense-btn" onclick="window.app.cancelEditExpense()"
-                                class="hidden w-full mt-2 px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-all duration-200 ease-in-out">
-                                ยกเลิกการแก้ไข
-                            </button>
+                            <button id="update-expense-btn" onclick="window.app.updateExpenseItem()"
+                                class="hidden w-full px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-all duration-200 ease-in-out">บันทึกการแก้ไข</button>
+                            <button id="cancel-expense-btn" onclick="window.app.resetExpenseForm()"
+                                class="hidden w-full px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-all duration-200 ease-in-out">ยกเลิก</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- 3. POI Directory (Stable) -->
-                <!-- (v.6) Added hover transition -->
+                <!-- 3. POI Directory -->
+                <!-- (v.7) Added card hover animation -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
                     <!-- (v.5) Header color changed -->
                     <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">📍 ไดเรกทอรีสถานที่ (POI)</h2>
@@ -1397,33 +1542,33 @@
                         <ul id="poi-list" class="space-y-3 mb-4 max-h-60 overflow-y-auto">
                             <!-- POI items here -->
                         </ul>
-                        <!-- (v.7) Gemini AI Button Added -->
+                        <!-- (v.5) Updated form for Edit/Update -->
                         <div class="mt-4 space-y-2 border-t pt-4">
-                            <h3 class="font-semibold">เพิ่ม/แก้ไข สถานที่</h3>
+                            <h3 class="font-semibold">เพิ่ม / แก้ไข สถานที่</h3>
                             
-                            <div class="space-y-2">
-                                <input type="text" id="poi-link" placeholder="ลิงก์ Google Maps (สั้นหรือยาวก็ได้)"
-                                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
-                                
-                                <button id="ai-poi-btn" onclick="window.app.analyzeMapLink()" 
-                                    class="w-full px-3 py-2 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md hover:bg-yellow-200 text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
-                                    <span id="ai-poi-btn-text">⚡ วิเคราะห์ลิงก์ด้วย AI</span>
-                                    <div id="ai-poi-btn-spinner" class="btn-spinner hidden"></div>
-                                </button>
-                            </div>
+                            <input type="text" id="poi-link" placeholder="วางลิงก์ Google Maps (สั้น/ยาว) ที่นี่"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
+                            
+                            <!-- (v.7) AI Analyze Button -->
+                            <button id="analyze-poi-btn" onclick="window.app.analyzeMapLink()" 
+                                class="w-full px-3 py-2 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md hover:bg-yellow-200 text-sm flex items-center justify-center gap-2 transition-all duration-200 ease-in-out disabled:opacity-50">
+                                <span id="analyze-poi-btn-text">⚡ วิเคราะห์ลิงก์ด้วย AI</span>
+                                <div id="analyze-poi-btn-spinner" class="poi-spinner hidden"></div>
+                            </button>
 
-                            <input type="text" id="poi-name" placeholder="ชื่อสถานที่ (AI จะช่วยเติม)"
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 bg-gray-50 transition-colors">
+                            <input type="text" id="poi-name" placeholder="ชื่อสถานที่ (จะขึ้นเองเมื่อวิเคราะห์)"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 bg-gray-50">
                             
-                            <input type="text" id="poi-notes" placeholder="โน้ตย่อ (AI จะช่วยเติม)"
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 bg-gray-50 transition-colors">
+                            <input type="text" id="poi-notes" placeholder="โน้ตย่อ (จะขึ้นเองเมื่อวิเคราะห์)"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
                             
+                            <!-- (v.6) Button theme changed to indigo -->
                             <button id="add-poi-btn" onclick="window.app.addPOI()"
                                 class="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">เพิ่มเข้าไดเรกทอรี</button>
-                            <button id="cancel-poi-btn" onclick="window.app.cancelEditPOI()"
-                                class="hidden w-full mt-2 px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-all duration-200 ease-in-out">
-                                ยกเลิกการแก้ไข
-                            </button>
+                            <button id="update-poi-btn" onclick="window.app.updatePOI()"
+                                class="hidden w-full px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-all duration-200 ease-in-out">บันทึกการแก้ไข</button>
+                            <button id="cancel-poi-btn" onclick="window.app.resetPoiForm()"
+                                class="hidden w-full px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-all duration-200 ease-in-out">ยกเลิก</button>
                         </div>
                     </div>
                 </div>
