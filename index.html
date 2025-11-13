@@ -43,7 +43,7 @@
             border: 2px solid white;
         }
 
-        /* NEW: Loading Spinner */
+        /* Loading Spinner */
         .loader {
             border: 4px solid #f3f3f3; /* Light grey */
             border-top: 4px solid #3b82f6; /* Blue */
@@ -87,7 +87,7 @@
         let unsubscribeTrip = null; 
 
         // -----------------------------------------------------------------
-        // FIREBASE CONFIG (จากที่คุณได้มา)
+        // FIREBASE CONFIG
         const firebaseConfig = {
           apiKey: "AIzaSyDzYQTm0V6yBcOCyBGJxD65AoGRHKEOZng",
           authDomain: "bear-cat-in-fok-2025.firebaseapp.com",
@@ -143,7 +143,9 @@
 
                         mainApp.classList.remove('hidden');
                         loginScreen.classList.add('hidden');
-                        userDisplay.textContent = `สวัสดี, ${userDisplayName}`;
+                        // Shorten name for display
+                        const shortName = userDisplayName.split(' ')[0];
+                        userDisplay.textContent = shortName;
                         logoutButton.classList.remove('hidden');
 
                         await loadDataAndRender();
@@ -185,7 +187,7 @@
             }
         }
 
-        // (loadDataAndRender and initializeDocument remain the same)
+        // (loadDataAndRender remains the same)
         async function loadDataAndRender() {
             if (!db || !tripDocId) return;
             const docRef = doc(db, "tripPlans", tripDocId);
@@ -213,7 +215,6 @@
         }
 
         async function initializeDocument(docRef) {
-            // **** ALL LINKS ARE NOW FIXED ****
             const initialData = {
                 flightInfo: [
                     {
@@ -270,34 +271,7 @@
                     { id: "chk4", name: "จอง JR Pass", done: false, createdBy: "System" },
                     { id: "chk5", name: "แลกเงินเยน", done: false, createdBy: "System" }
                 ],
-                poiCatalog: [
-                    // --- ALL LINKS BELOW ARE FIXED TO BE PERMANENT ---
-                    { id: "poi1", name: "Shisui Premium Outlets", mapLink: "https://www.google.com/maps/place/Shisui+Premium+Outlets/", notes: "Outlet ใกล้สนามบิน (เผื่อแวะ)", createdBy: "System" },
-                    { id: "poi2", name: "วัดคินคะคุจิ (Kinkaku-ji)", mapLink: "https://www.google.com/maps/place/Kinkaku-ji/", notes: "วัดทอง", createdBy: "System" },
-                    { id: "poi3", name: "Canal City Hakata", mapLink: "https://www.google.com/maps/place/Canal+City+Hakata/", notes: "ห้างใหญ่ แหล่งช้อปปิ้ง", createdBy: "System" },
-                    { id: "poi4", name: "Dotonbori Glico Sign", mapLink: "https://www.google.com/maps/place/Dotonbori+Glico+Sign/", notes: "ป้ายกูลิโกะ", createdBy: "System" },
-                    { id: "poi101", name: "Higashi Park (สวนฮิงาชิ)", mapLink: "https://www.google.com/maps/place/Higashi+Park/", notes: "สวนสาธารณะ", createdBy: "System" },
-                    { id: "poi102", name: "Hakata Ramen Hakataya Kawabata", mapLink: "https://www.google.com/maps/place/Hakata+Ramen+Hakataya+Kawabata/", notes: "ราเม็ง", createdBy: "System" },
-                    { id: "poi103", name: "LaLaport Kadoma / Mitsui Outlet", mapLink: "https://www.google.com/maps/place/Mitsui+Shopping+Park+LaLaport+KADOMA/", notes: "Outlet โอซาก้า", createdBy: "System" },
-                    { id: "poi104", name: "Yanagibashi Rengo Market", mapLink: "https://www.google.com/maps/place/Yanagibashi+Rengo+Market/", notes: "ตลาดรวมยานางิบาชิ", createdBy: "System" },
-                    { id: "poi105", name: "Osaka City Hall", mapLink: "https://www.google.com/maps/place/Osaka+City+Hall/", notes: "ศาลาว่าการโอซาก้า", createdBy: "System" },
-                    { id: "poi106", name: "JACK IN THE DONUTS 福岡天神店", mapLink: "https://www.google.com/maps/place/JACK+IN+THE+DONUTS+Fukuoka+Tenjin/", notes: "โดนัท", createdBy: "System" },
-                    { id: "poi107", name: "Divine Bull Statue", mapLink: "https://www.google.com/maps/place/Statue+of+the+Divine+Ox/", notes: "รูปปั้นวัวศักดิ์สิทธิ์", createdBy: "System" },
-                    { id: "poi108", name: "Osaka Kizu Wholesale Market", mapLink: "https://www.google.com/maps/place/Osaka+Kizu+Wholesale+Market/", notes: "ตลาดปลาโอซาก้า", createdBy: "System" },
-                    { id: "poi109", name: "หอคอยแห่งดวงอาทิตย์ (Tower of the Sun)", mapLink: "https://www.google.com/maps/place/Tower+of+the+Sun/", notes: "Expo '70 Commemorative Park", createdBy: "System" },
-                    { id: "poi110", name: "วัดนันโซอิน (Nanzoin Temple)", mapLink: "https://www.google.com/maps/place/Nanzoin+Temple/", notes: "พระนอนใหญ่", createdBy: "System" },
-                    { id: "poi111", name: "LaLa Port Fukuoka (กันดั้ม)", mapLink: "https://www.google.com/maps/place/LaLaport+Fukuoka/", notes: "ห้างกันดั้ม", createdBy: "System" },
-                    { id: "poi112", name: "ฟูกูโอกะทาวเวอร์ (Fukuoka Tower)", mapLink: "https://www.google.com/maps/place/Fukuoka+Tower/", notes: "จุดชมวิว", createdBy: "System" },
-                    { id: "poi113", name: "Mt.Sarakura Sky Dome", mapLink: "https://www.google.com/maps/place/Mt.+Sarakura/", notes: "จุดชมวิวกลางคืน คิตะคิวชู", createdBy: "System" },
-                    { id: "poi114", name: "Wakato Bridge", mapLink: "https://www.google.com/maps/place/Wakato+Bridge/", notes: "สะพานแขวน คิตะคิวชู", createdBy: "System" },
-                    { id: "poi115", name: "Ainoshima Island (เกาะแมว)", mapLink: "https://www.google.com/maps/place/Ainoshima/", notes: "เกาะแมว", createdBy: "System" },
-                    { id: "poi116", name: "ศาลเจ้ามิยาจิดาเกะ", mapLink: "https://www.google.com/maps/place/Miyajidake+Shrine/", notes: "ศาลเจ้า", createdBy: "System" },
-                    { id: "poi117", name: "อนุสรณ์สันติภาพฮิโระชิมะ (Peace Memorial)", mapLink: "https://www.google.com/maps/place/Atomic+Bomb+Dome/", notes: "ฮิโรชิมะ", createdBy: "System" },
-                    { id: "poi118", name: "Miyajima Ferry Terminal", mapLink: "https://www.google.com/maps/place/Miyajima+Ferry+Terminal/", notes: "ท่าเรือไปเกาะมิยาจิมะ", createdBy: "System" },
-                    { id: "poi119", name: "Hypocenter Park", mapLink: "https://www.google.com/maps/place/Nagasaki+Hypocenter+Park/", notes: "สวนสันติภาพนางาซากิ", createdBy: "System" },
-                    { id: "poi120", name: "Kumamon Port Yatsushiro", mapLink: "https://www.google.com/maps/place/Kumamon+Port+Yatsushiro/", notes: "ท่าเรือคุมะมง", createdBy: "System" },
-                    { id: "poi121", name: "Kia Ora Budget Stay", mapLink: "https://www.google.com/maps/place/Kia+Ora+Budget+Stay/", notes: "ที่พัก (ตัวเลือก?)", createdBy: "System" }
-                ]
+                poiCatalog: [] // EMPTY POI CATALOG AS REQUESTED
             };
             await setDoc(docRef, initialData);
         }
@@ -384,7 +358,6 @@
                     `<option value="${poi.id}">${poi.name}</option>`
                 ).join('');
 
-                // NEW: Modified Summary for better editing UX
                 return `
                 <details ${index === 0 ? 'open' : ''} class="mb-2 bg-white shadow-sm rounded-lg overflow-hidden">
                     <summary class="font-semibold p-4 cursor-pointer hover:bg-gray-50 flex justify-between items-center gap-2">
@@ -539,7 +512,7 @@
         }
 
         // --- Database Update Functions (Exposed via window.app) ---
-
+        
         async function updateItinerary(newItinerary) {
             try {
                 const docRef = doc(db, "tripPlans", tripDocId);
@@ -551,23 +524,18 @@
 
         let currentEdit = { dayIndex: null, itemId: null };
 
-        // NEW: Function to toggle edit mode for day header
         function toggleDayHeaderEdit(dayIndex, event, isEditing) {
-            // Stop the event from bubbling up (which would open/close the <details>)
             if (event) {
                 event.stopPropagation();
                 event.preventDefault();
             }
-
             const displayDiv = document.getElementById(`day-header-display-${dayIndex}`);
             const editDiv = document.getElementById(`day-header-edit-${dayIndex}`);
             const input = document.getElementById(`day-header-input-${dayIndex}`);
             
             if (isEditing) {
-                // Copy current text to input
                 const currentText = displayDiv.querySelector('span').textContent;
                 input.value = currentText;
-                
                 displayDiv.classList.add('hidden');
                 editDiv.classList.remove('hidden');
                 input.focus();
@@ -591,7 +559,6 @@
                 return day;
             });
             await updateItinerary(newItinerary);
-            // Hide edit UI
             toggleDayHeaderEdit(dayIndex, null, false);
         }
 
@@ -656,7 +623,6 @@
             await updateItinerary(newItinerary); 
             cancelEdit(dayIndex); 
         }
-
 
         async function addDailyItem(dayIndex) {
             const timeInput = document.getElementById(`item-time-${dayIndex}`);
@@ -806,6 +772,33 @@
             }
         }
 
+        // --- UPDATED POI FUNCTIONS ---
+
+        function autoFillPoiName() {
+            const linkInput = document.getElementById('poi-link');
+            const nameInput = document.getElementById('poi-name');
+            const url = linkInput.value.trim();
+
+            if (!url) {
+                alert("กรุณาวางลิงก์ Google Maps ก่อนค่ะ");
+                return;
+            }
+
+            // Simple Regex for permanent links
+            const regex = /place\/([^\/]+)/;
+            const match = url.match(regex);
+
+            if (match && match[1]) {
+                let extractedName = decodeURIComponent(match[1].replace(/\+/g, ' '));
+                nameInput.value = extractedName;
+                nameInput.classList.add('bg-green-100');
+                setTimeout(() => nameInput.classList.remove('bg-green-100'), 1000);
+            } else {
+                alert("ไม่สามารถดึงชื่อจากลิงก์นี้ได้อัตโนมัติ (กรุณาพิมพ์ชื่อเองนะคะ)");
+                nameInput.focus();
+            }
+        }
+
         async function addPOI() {
             const nameInput = document.getElementById('poi-name');
             const linkInput = document.getElementById('poi-link');
@@ -833,6 +826,8 @@
                 } catch (error) {
                     displayError("ไม่สามารถเพิ่ม POI ได้", error);
                 }
+            } else {
+                alert("กรุณาใส่ลิงก์และชื่อสถานที่");
             }
         }
 
@@ -862,11 +857,12 @@
             toggleChecklistItem,
             addPOI,
             removePOI,
-            toggleDayHeaderEdit, // NEW
+            toggleDayHeaderEdit, 
             updateDayHeader, 
             editDailyItem,   
             updateDailyItem, 
-            cancelEdit       
+            cancelEdit,
+            autoFillPoiName
         };
 
         // --- Start Application ---
@@ -877,7 +873,7 @@
 
 <body class="bg-gray-100 font-sans">
     
-    <!-- NEW: Loading Screen (Visible by default) -->
+    <!-- Loading Screen -->
     <div id="loading-screen" class="flex items-center justify-center min-h-screen">
         <div class="flex flex-col items-center">
             <div class="loader"></div>
@@ -885,7 +881,7 @@
         </div>
     </div>
 
-    <!-- NEW: Login Screen (Hidden by default) -->
+    <!-- Login Screen -->
     <div id="login-screen" class="hidden container mx-auto p-8 max-w-md mt-20 bg-white shadow-lg rounded-lg text-center">
         <h1 class="text-3xl font-bold text-gray-900 mb-4">Bear Cat In FOK 2025</h1>
         <p class="text-gray-600 mb-6">กรุณาล็อกอินเพื่อเข้าใช้งานแผนการเดินทาง</p>
@@ -896,19 +892,20 @@
         </button>
     </div>
 
-    <!-- Main Application (Hidden by default) -->
+    <!-- Main Application -->
     <div id="main-app" class="hidden container mx-auto p-4 md:p-8 max-w-7xl">
 
-        <!-- NEW: Modified Header for Mobile -->
-        <header class="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-            <div>
-                <h1 class="text-4xl font-bold text-gray-900">Bear Cat In FOK 2025</h1>
-                <p class="text-lg text-gray-600">ทริปญี่ปุ่น (Fukuoka → Osaka) 27 ธ.ค. 2568 - 3 ม.ค. 2569</p>
+        <!-- NEW: COMPACT MOBILE HEADER -->
+        <header class="mb-4 bg-white shadow-sm rounded-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+            <div class="flex-grow">
+                <h1 class="text-xl md:text-2xl font-bold text-gray-800 leading-tight">Bear Cat In FOK 2025</h1>
+                <!-- Date on new line -->
+                <p class="text-xs md:text-sm text-gray-500 mt-1">ทริปญี่ปุ่น (Fukuoka → Osaka)<br class="md:hidden"> 27 ธ.ค. 2568 - 3 ม.ค. 2569</p>
             </div>
-            <div class="text-center md:text-right">
-                <span id="user-display" class="text-gray-700 block mb-2 md:mb-0 md:inline"></span>
+            <div class="flex items-center gap-2 mt-2 md:mt-0 self-end md:self-auto">
+                <span id="user-display" class="text-xs text-gray-500"></span>
                 <button id="logout-button" onclick="window.app.signOutApp()"
-                    class="ml-0 md:ml-4 px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 text-sm">
+                    class="px-2 py-1 bg-gray-100 border border-gray-300 text-gray-600 rounded hover:bg-gray-200 text-xs transition-colors">
                     Logout
                 </button>
             </div>
@@ -927,7 +924,7 @@
 
                 <!-- 1. Daily Itinerary -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-                    <h2 class="text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">🗺️ แผนการเดินทางรายวัน</h2>
+                    <h2 class="text-xl md:text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">🗺️ แผนการเดินทางรายวัน</h2>
                     <div id="daily-itinerary-container" class="p-5 space-y-2">
                         <!-- Daily itinerary items will be rendered here -->
                     </div>
@@ -940,7 +937,7 @@
 
                 <!-- 2. Accommodation -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-                    <h2 class="text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">🏨 ที่พักที่จองแล้ว</h2>
+                    <h2 class="text-xl md:text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">🏨 ที่พักที่จองแล้ว</h2>
                     <div id="accommodation-container" class="p-5 divide-y divide-gray-200">
                         <!-- Accommodation info will be rendered here -->
                     </div>
@@ -948,7 +945,7 @@
 
                 <!-- 3. Flight Info -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-                    <h2 class="text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">✈️ ข้อมูลเที่ยวบินหลัก</h2>
+                    <h2 class="text-xl md:text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">✈️ ข้อมูลเที่ยวบินหลัก</h2>
                     <div id="flight-info-container" class="p-5 divide-y divide-gray-200">
                         <!-- Flight info will be rendered here -->
                     </div>
@@ -961,7 +958,7 @@
 
                 <!-- 1. Checklist -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-                    <h2 class="text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">📋 รายการที่ต้องทำ</h2>
+                    <h2 class="text-xl md:text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">📋 รายการที่ต้องทำ</h2>
                     <div class="p-5">
                         <ul id="checklist-list" class="space-y-1 mb-4">
                             <!-- Checklist items will be rendered here -->
@@ -979,12 +976,12 @@
 
                 <!-- 2. Expenses -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-                    <h2 class="text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">💸 รายจ่าย</h2>
+                    <h2 class="text-xl md:text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">💸 รายจ่าย</h2>
                     <div class="p-5">
                         <ul id="expenses-list" class="space-y-1 mb-4">
                             <!-- Expenses items here -->
                         </ul>
-                        <p id="no-expenses" class="text-gray-500 text-sm hidden">ไม่มีรายจ่าย</VStack>
+                        <p id="no-expenses" class="text-gray-500 text-sm hidden">ไม่มีรายจ่าย</p>
                         
                         <div class="border-t pt-4">
                             <h3 id="expenses-total" class="text-lg font-semibold text-right text-gray-800">ยอดรวม: 0.00 บาท</h3>
@@ -1001,21 +998,33 @@
                     </div>
                 </div>
 
-                <!-- 3. POI Directory -->
+                <!-- 3. POI Directory (Zero-Input) -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-                    <h2 class="text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">📍 ไดเรกทอรีสถานที่ (POI)</h2>
+                    <h2 class="text-xl md:text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">📍 ไดเรกทอรีสถานที่ (POI)</h2>
                     <div class="p-5">
                         <ul id="poi-list" class="space-y-3 mb-4 max-h-60 overflow-y-auto">
                             <!-- POI items here -->
                         </ul>
                         <div class="mt-4 space-y-2 border-t pt-4">
                             <h3 class="font-semibold">เพิ่มสถานที่ใหม่</h3>
-                            <input type="text" id="poi-name" placeholder="ชื่อสถานที่"
+                            
+                            <!-- Link Input (First) -->
+                            <input type="text" id="poi-link" placeholder="วางลิงก์ Google Maps (แบบเต็ม) ที่นี่"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                            <input type="text" id="poi-link" placeholder="ลิงก์ Google Maps"
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                            
+                            <!-- Auto-Fill Button -->
+                            <button onclick="window.app.autoFillPoiName()" 
+                                class="w-full px-3 py-1 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md hover:bg-yellow-200 text-sm flex items-center justify-center gap-1">
+                                ⚡ ดึงชื่อสถานที่จากลิงก์
+                            </button>
+
+                            <!-- Name Input (Second) -->
+                            <input type="text" id="poi-name" placeholder="ชื่อสถานที่ (จะขึ้นเองอัตโนมัติ)"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 bg-gray-50">
+                            
                             <input type="text" id="poi-notes" placeholder="โน้ตย่อ (เช่น 'ราเม็ง 24 ชม.')"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                            
                             <button onclick="window.app.addPOI()"
                                 class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">เพิ่มเข้าไดเรกทอรี</button>
                         </div>
