@@ -113,6 +113,13 @@
                     fontFamily: {
                         sans: ['Inter', 'Noto Sans Thai', 'sans-serif'],
                     },
+                    colors: {
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                        }
+                    }
                 },
             },
         };
@@ -346,10 +353,7 @@
             
             container.innerHTML = itinerary.map((dayItem, index) => {
                 const timelineHtml = (dayItem.items || []).sort((a, b) => a.time.localeCompare(b.time)).map(item => {
-                    const createdByHtml = item.createdBy 
-                        ? `<p class="text-xs text-gray-400 italic mt-1">บันทึกโดย: ${item.createdBy.split(' ')[0]}</p>` 
-                        : '';
-
+                    // --- REMOVED createdByHtml ---
                     return `
                     <div class="timeline-item pb-4">
                         <div class="timeline-dot"></div>
@@ -357,7 +361,7 @@
                             <div>
                                 <span class="font-semibold text-gray-800">${item.time}</span>
                                 <p class="text-gray-700">${item.text.replace(/\n/g, '<br>')}</p>
-                                ${createdByHtml} 
+                                <!-- REMOVED createdByHtml -->
                             </div>
                             <div class="flex-shrink-0 ml-2">
                                 <button onclick="window.app.editDailyItem(${index}, '${item.id}')"
@@ -376,9 +380,10 @@
 
                 const isOpen = openStates[dayItem.day] !== undefined ? openStates[dayItem.day] : (index === 0);
 
+                // --- MODIFIED: Added bg-slate-50 and border for contrast ---
                 return `
-                <details ${isOpen ? 'open' : ''} class="mb-2 bg-white shadow-sm rounded-lg overflow-hidden">
-                    <summary class="font-semibold p-4 cursor-pointer hover:bg-gray-50 flex justify-between items-center gap-2">
+                <details ${isOpen ? 'open' : ''} class="mb-2 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
+                    <summary class="font-semibold p-4 cursor-pointer hover:bg-slate-100 flex justify-between items-center gap-2">
                         
                         <!-- Display Mode -->
                         <div id="day-header-display-${index}" class="flex justify-between items-center flex-grow">
@@ -400,7 +405,7 @@
                         </div>
 
                     </summary>
-                    <div class="p-4 border-t border-gray-200">
+                    <div class="p-4 border-t border-slate-200 bg-white">
                         <div class="mb-4">
                             ${timelineHtml || '<p class="text-gray-500 text-sm">ยังไม่มีกิจกรรมในวันนี้</p>'}
                         </div>
@@ -450,23 +455,21 @@
 
             sortedList.forEach(item => {
                 const isDone = item.done;
-                const createdByHtml = item.createdBy 
-                        ? `<span class="text-xs text-gray-400 italic ml-2">(โดย: ${item.createdBy.split(' ')[0]})</span>` 
-                        : '';
+                // --- REMOVED createdByHtml ---
 
                 list.innerHTML += `
                     <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md group">
                         <div class="flex items-center flex-grow mr-2">
                             <span class="${isDone ? 'text-gray-500 line-through' : 'text-gray-800'}">${item.name}</span>
                             
-                            <!-- **** FIX: Grouped Edit/Delete buttons **** -->
+                            <!-- **** Grouped Edit/Delete buttons **** -->
                             <button onclick="window.app.editChecklistItem('${item.id}')" 
                                 class="ml-2 text-xs text-blue-500 opacity-0 group-hover:opacity-100 hover:underline">แก้ไข</button>
                             <button onclick="window.app.removeChecklistItem('${item.id}')" 
                                 class="ml-1 text-xs text-red-500 opacity-0 group-hover:opacity-100 hover:underline">ลบ</button>
                             <!-- **** END FIX **** -->
 
-                            ${createdByHtml}
+                            <!-- REMOVED createdByHtml -->
                         </div>
                         <div class="flex-shrink-0">
                             <button onclick="window.app.toggleChecklistItem('${item.id}', ${!isDone})" 
@@ -496,9 +499,7 @@
 
             let sum = 0;
             (expenses || []).forEach(exp => {
-                const createdByHtml = exp.createdBy 
-                        ? `<span class="text-xs text-gray-400 italic block"> (โดย: ${exp.createdBy.split(' ')[0]})</span>` 
-                        : '';
+                // --- REMOVED createdByHtml ---
                 
                 list.innerHTML += `
                     <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md group">
@@ -507,7 +508,7 @@
                             <!-- Edit Button Added -->
                             <button onclick="window.app.editExpenseItem('${exp.id}')" 
                                 class="ml-2 text-xs text-blue-500 opacity-0 group-hover:opacity-100 hover:underline">แก้ไข</button>
-                            ${createdByHtml}
+                            <!-- REMOVED createdByHtml -->
                         </div>
                         <div class="flex items-center gap-2">
                             <span class="${exp.amount >= 0 ? 'text-gray-700' : 'text-red-600'} font-medium text-right">
@@ -535,9 +536,7 @@
                 const notesHtml = poi.notes 
                     ? `<p class="text-sm text-gray-600 mt-1"><em>โน้ต: ${poi.notes}</em></p>` 
                     : '';
-                const createdByHtml = poi.createdBy 
-                        ? `<p class="text-xs text-gray-400 italic mt-1">(โดย: ${poi.createdBy.split(' ')[0]})</p>` 
-                        : '';
+                // --- REMOVED createdByHtml ---
 
                 list.innerHTML += `
                     <li class="p-2 border-b border-gray-200 hover:bg-gray-50">
@@ -546,7 +545,7 @@
                             <a href="${poi.mapLink}" target="_blank" class="text-blue-600 hover:underline text-sm">แผนที่</a>
                         </div>
                         ${notesHtml}
-                        ${createdByHtml}
+                        <!-- REMOVED createdByHtml -->
                         <div class="flex gap-3 mt-2">
                             <!-- Edit Button Added -->
                             <button onclick="window.app.editPOI('${poi.id}')" class="text-xs text-blue-500 hover:underline mr-2">แก้ไข</button>
@@ -889,9 +888,9 @@
             currentChecklistEditId = id;
             document.getElementById('checklist-name').value = item.name;
 
+            // --- MODIFIED: Show/Hide DIVs ---
             document.getElementById('add-checklist-btn').classList.add('hidden');
-            document.getElementById('update-checklist-btn').classList.remove('hidden');
-            document.getElementById('cancel-checklist-btn').classList.remove('hidden');
+            document.getElementById('checklist-edit-buttons').classList.remove('hidden');
             document.getElementById('checklist-name').focus();
         }
 
@@ -899,9 +898,9 @@
             currentChecklistEditId = null;
             document.getElementById('checklist-name').value = '';
 
+            // --- MODIFIED: Show/Hide DIVs ---
             document.getElementById('add-checklist-btn').classList.remove('hidden');
-            document.getElementById('update-checklist-btn').classList.add('hidden');
-            document.getElementById('cancel-checklist-btn').classList.add('hidden');
+            document.getElementById('checklist-edit-buttons').classList.add('hidden');
         }
 
         async function toggleChecklistItem(id, isDone) {
@@ -1049,7 +1048,8 @@
     </script>
 </head>
 
-<body class="bg-gray-100 font-sans">
+<!-- MODIFIED: Changed bg-gray-100 to bg-slate-100 -->
+<body class="bg-slate-100 font-sans">
     
     <!-- Loading Screen -->
     <div id="loading-screen" class="flex items-center justify-center min-h-screen">
@@ -1144,16 +1144,21 @@
                         </ul>
                         <p id="no-checklist" class="text-gray-500 text-sm hidden">ไม่มีรายการ</p>
 
-                        <div class="mt-4 flex space-x-2 border-t pt-4">
+                        <!-- MODIFIED: Restructured for better mobile responsiveness -->
+                        <div class="mt-4 space-y-2 border-t pt-4">
                             <input type="text" id="checklist-name" placeholder="เพิ่มรายการใหม่"
-                                class="flex-grow p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                            
                             <button id="add-checklist-btn" onclick="window.app.addOrUpdateChecklistItem()"
-                                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">เพิ่ม</button>
-                            <!-- Edit Buttons -->
-                            <button id="update-checklist-btn" onclick="window.app.addOrUpdateChecklistItem()"
-                                class="hidden px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">บันทึก</button>
-                            <button id="cancel-checklist-btn" onclick="window.app.cancelEditChecklist()"
-                                class="hidden px-2 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600">ยกเลิก</button>
+                                class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">เพิ่ม</button>
+                            
+                            <!-- Edit Buttons (Grouped) -->
+                            <div id="checklist-edit-buttons" class="hidden flex gap-2">
+                                <button id="update-checklist-btn" onclick="window.app.addOrUpdateChecklistItem()"
+                                    class="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">บันทึก</button>
+                                <button id="cancel-checklist-btn" onclick="window.app.cancelEditChecklist()"
+                                    class="w-auto px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600">ยกเลิก</button>
+                            </div>
                         </div>
                     </div>
                 </div>
