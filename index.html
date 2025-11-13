@@ -213,6 +213,7 @@
         }
 
         async function initializeDocument(docRef) {
+            // **** ALL LINKS ARE NOW FIXED ****
             const initialData = {
                 flightInfo: [
                     {
@@ -234,7 +235,7 @@
                         name: "旧P203 Phoenix inn (Fukuoka)",
                         dates: "27 ธ.ค. - 30 ธ.ค.",
                         address: "5-chōme-4-15 Katakasu, Hakata Ward",
-                        mapLink: "https://www.google.com/maps/place/5-ch%C5%8Dme-4-15+Katakasu,+Hakata+Ward,+Fukuoka,+812-0043,+Japan", // FIXED LINK
+                        mapLink: "https://www.google.com/maps/place/5-ch%C5%8Dme-4-15+Katakasu,+Hakata+Ward,+Fukuoka,+812-0043,+Japan", 
                         priceTHB: 4553.31,
                         station: "สถานี Hakata (เดินประมาณ 5-10 นาที)"
                     },
@@ -242,7 +243,7 @@
                         name: "天王寺204 (Osaka)",
                         dates: "30 ธ.ค. - 3 ม.ค.",
                         address: "南河堀町10-3, 大阪市天王寺区",
-                        mapLink: "https://www.google.com/maps/place/10-3+Minamikawahorich%C5%8D,+Tenn%C5%8Dji+Ward,+Osaka,+543-0054,+Japan", // FIXED LINK
+                        mapLink: "https://www.google.com/maps/place/10-3+Minamikawahorich%C5%8D,+Tenn%C5%8Dji+Ward,+Osaka,+543-0054,+Japan", 
                         priceTHB: 5190.00,
                         station: "สถานี JR Tennoji (เดิน 3 นาที)"
                     }
@@ -983,7 +984,7 @@
                         <ul id="expenses-list" class="space-y-1 mb-4">
                             <!-- Expenses items here -->
                         </ul>
-                        <p id="no-expenses" class="text-gray-500 text-sm hidden">ไม่มีรายจ่าย</p>
+                        <p id="no-expenses" class="text-gray-500 text-sm hidden">ไม่มีรายจ่าย</VStack>
                         
                         <div class="border-t pt-4">
                             <h3 id="expenses-total" class="text-lg font-semibold text-right text-gray-800">ยอดรวม: 0.00 บาท</h3>
