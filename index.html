@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โครงแผนการเดินทางร่วม (หมี & แมว)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* (CSS Styles remain the same as the previous file) */
+        details[open] summary {
+            font-weight: 600;
+        }
+        .timeline-item {
+            position: relative;
+            padding-left: 1.5rem;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0.25rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #e5e7eb;
+        }
+        .timeline-item:first-child::before {
+            top: 0.5rem;
+        }
+        .timeline-item:last-child::before {
+            bottom: 0.5rem;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: 0;
+            top: 0.5rem;
+            width: 0.625rem;
+            height: 0.625rem;
+            background-color: #3b82f6;
+            border-radius: 9999px;
+            border: 2px solid white;
+        }
+    </style>
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import {
+            getAuth,
+            signInAnonymously,
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            setDoc,
+            onSnapshot,
+            updateDoc,
+            getDoc,
+            arrayUnion,
+            arrayRemove,
+            setLogLevel
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Global Variables ---
+        let app, db, auth;
+        let userId;
+        // นี่คือ ID ของเอกสารแผนการเดินทางที่ใช้ร่วมกัน
+        const tripDocId = "mhee-maew-trip-2025"; 
+        let appData = null; 
+        let unsubscribeTrip = null; 
+
+        // -----------------------------------------------------------------
+        // TODO: วาง FIREBASE CONFIG ที่คุณคัดลอกมาลงที่นี่
+        // 1. ไปที่ console.firebase.google.com สร้างโปรเจกต์
+        // 2. เพิ่ม Web App (</>)
+        // 3. คัดลอกค่า config มาวางแทนที่ส่วนนี้
+        
+        const firebaseConfig = {
+          apiKey: "AIzaSyDzYQTm0V6yBcOCyBGJxD65AoGRHKEOZng",
+          authDomain: "bear-cat-in-fok-2025.firebaseapp.com",
+          projectId: "bear-cat-in-fok-2025",
+          storageBucket: "bear-cat-in-fok-2025.firebasestorage.app",
+          messagingSenderId: "178010604106",
+          appId: "1:178010604106:web:2dc3d30600b7a8d7769cb3",
+          measurementId: "G-KDSLTNV0MJ"
+        };
+        // -----------------------------------------------------------------
+
+
+        // --- Tailwind Configuration ---
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans Thai', 'sans-serif'],
+                    },
+                },
+            },
+        };
+
+        // --- Error Display ---
+        function displayError(message, error) {
+            const errorElement = document.getElementById('error-message');
+            if (errorElement) {
+                errorElement.textContent = `เกิดข้อผิดพลาด: ${message}. รายละเอียด: ${error?.message || error}`;
+                errorElement.classList.remove('hidden');
+            }
+            console.error(message, error);
+        }
+
+        // --- Firebase Initialization and Auth ---
+        async function initFirebaseAndAuth() {
+            // *** หากยังไม่ได้ใส่ firebaseConfig จะแจ้งเตือน ***
+            if (typeof firebaseConfig === 'undefined') {
+                displayError("ยังไม่ได้ตั้งค่า Firebase", "กรุณาแก้ไขไฟล์ HTML และใส่ 'firebaseConfig' ของคุณ (ดูคู่มือ 'deployment_guide.md')");
+                return;
+            }
+            
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('Debug');
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        await loadDataAndRender();
+                    } else {
+                        // ลงชื่อเข้าใช้แบบไม่ระบุตัวตนโดยอัตโนมัติ
+                        await signInAnonymously(auth);
+                    }
+                });
+            } catch (error) {
+                displayError("ไม่สามารถเริ่มต้น Firebase ได้", error);
+            }
+        }
+
+        // --- Data Loading and Rendering ---
+        async function loadDataAndRender() {
+            if (!db || !tripDocId) return;
+            // *** แก้ไขเส้นทาง (Path) ให้อ่านจาก Root Collection ***
+            const docRef = doc(db, "tripPlans", tripDocId);
+
+            try {
+                const docSnap = await getDoc(docRef);
+                if (!docSnap.exists()) {
+                    await initializeDocument(docRef);
+                }
+
+                if (unsubscribeTrip) unsubscribeTrip();
+                unsubscribeTrip = onSnapshot(docRef, (doc) => {
+                    if (doc.exists()) {
+                        appData = doc.data();
+                        renderUI(appData);
+                    } else {
+                        displayError("ไม่พบข้อมูลแผนการเดินทาง", "Document does not exist");
+                    }
+                }, (error) => {
+                    displayError("เกิดข้อผิดพลาดในการดึงข้อมูล (onSnapshot)", error);
+                });
+            } catch (error) {
+                displayError("ไม่สามารถโหลดข้อมูลได้", error);
+            }
+        }
+
+        // --- Initial Document Data ---
+        async function initializeDocument(docRef) {
+             // ข้อมูลเริ่มต้นจะเหมือนกับในไฟล์ travel_planner.html
+            const initialData = {
+                flightInfo: [
+                    {
+                        title: "ขาไป (BKK → FUK)",
+                        flights: [
+                            "26 ต.ค. 2568, 23:50 (BKK) → 27 ต.ค. 04:50 (MNL) | PR733 | ที่นั่ง 52J, 52K",
+                            "27 ต.ค. 2568, 10:00 (MNL) → 14:40 (FUK) | PR426 | ที่นั่ง 51A, 51B"
+                        ]
+                    },
+                    {
+                        title: "ขากลับ (KIX → DMK)",
+                        flights: [
+                            "3 มี.ค. 2569, 09:55 (KIX) → 14:25 (DMK) | XJ613 | ที่นั่ง 42F, 42G"
+                        ]
+                    }
+                ],
+                accommodations: [
+                    {
+                        name: "旧P203 Phoenix inn (Fukuoka)",
+                        dates: "27 ธ.ค. - 30 ธ.ค.",
+                        address: "5-chōme-4-15 Katakasu, Hakata Ward",
+                        mapLink: "https://maps.app.goo.gl/XKwhDnKECUdxR7169",
+                        priceTHB: 4553.31,
+                        station: "สถานี Hakata (เดินประมาณ 5-10 นาที)"
+                    },
+                    {
+                        name: "天王寺204 (Osaka)",
+                        dates: "30 ธ.ค. - 3 ม.ค.",
+                        address: "南河堀町10-3, 大阪市天王寺区",
+                        mapLink: "https://maps.app.goo.gl/e14j5F8ffJC8mmuo7",
+                        priceTHB: 5190.00,
+                        station: "สถานี JR Tennoji (เดิน 3 นาที)"
+                    }
+                ],
+                dailyItinerary: [
+                    { day: "วันที่ 1 (27 ธ.ค.): Fukuoka", items: [{ id: `item${Date.now()}`, time: "15:00", text: "Check-in ที่พัก (Phoenix inn)"}] },
+                    { day: "วันที่ 2 (28 ธ.ค.): Fukuoka", items: [] },
+                    { day: "วันที่ 3 (29 ธ.ค.): Fukuoka", items: [] },
+                    { day: "วันที่ 4 (30 ธ.ค.): Travel to Osaka", items: [{ id: `item${Date.now()+1}`, time: "15:00", text: "Check-in ที่พัก (Tennoji 204)"}] },
+                    { day: "วันที่ 5 (31 ธ.ค.): Osaka", items: [] },
+                    { day: "วันที่ 6 (1 ม.ค.): Osaka/Kyoto", items: [] },
+                    { day: "วันที่ 7 (2 ม.ค.): Osaka", items: [] },
+                    { day: "วันที่ 8 (3 ม.ค.): Travel Back", items: [] }
+                ],
+                expenses: [
+                    { id: "exp1", name: "ที่พัก Fukuoka (Airbnb)", amount: 4553.31, currency: "THB" },
+                    { id: "exp2", name: "ที่พัก Osaka (Airbnb)", amount: 5190.00, currency: "THB" },
+                    { id: "exp3", name: "ค่าจองที่นั่ง XJ613 (2 คน)", amount: 1240.00, currency: "THB" }
+                ],
+                checklist: [
+                    { id: "chk1", name: "จองที่พัก Fukuoka", done: true },
+                    { id: "chk2", name: "จองที่พัก Osaka", done: true },
+                    { id: "chk3", name: "จองตั๋วเครื่องบิน", done: true },
+                    { id: "chk4", name: "จอง JR Pass", done: false },
+                    { id: "chk5", name: "แลกเงินเยน", done: false }
+                ],
+                poiCatalog: [
+                    { id: "poi1", name: "Shisui Premium Outlets", mapLink: "https://maps.app.goo.gl/SGofBWH22DN7YC25A", notes: "Outlet ใกล้สนามบิน (เผื่อแวะ)" },
+                    { id: "poi2", name: "วัดคินคะคุจิ (Kinkaku-ji)", mapLink: "https://maps.app.goo.gl/5fSj1fJ7kL7xG7Yq8", notes: "วัดทอง" },
+                    { id: "poi3", name: "Canal City Hakata", mapLink: "https://maps.app.goo.gl/95a3pGfYx6Yg9GgUA", notes: "ห้างใหญ่ แหล่งช้อปปิ้ง" },
+                    { id: "poi4", name: "Dotonbori Glico Sign", mapLink: "https://maps.app.goo.gl/iG3fE6fUqjYmCg9HA", notes: "ป้ายกูลิโกะ" },
+                    { id: "poi101", name: "Higashi Park (สวนฮิงาชิ)", mapLink: "https://maps.google.com/maps/contrib/101681164755352778011", notes: "สวนสาธารณะ" },
+                    { id: "poi102", name: "Hakata Ramen Hakataya Kawabata", mapLink: "https://maps.app.goo.gl/ToNCwiT359YPM1Ha7", notes: "ราเม็ง" },
+                    { id: "poi103", name: "LaLaport Kadoma / Mitsui Outlet", mapLink: "https://maps.app.goo.gl/9gCXN11f9NqYd3Wn8", notes: "Outlet โอซาก้า" },
+                    { id: "poi104", name: "Yanagibashi Rengo Market", mapLink: "https://maps.google.com/maps/contrib/113106483043824772363", notes: "ตลาดรวมยานางิบาชิ" },
+                    { id: "poi105", name: "Osaka City Hall", mapLink: "https://maps.app.goo.gl/z28nQkGhsK6kGkST9", notes: "ศาลาว่าการโอซาก้า" },
+                    { id: "poi106", name: "JACK IN THE DONUTS 福岡天神店", mapLink: "https://maps.app.goo.gl/E4L9vGj9gqR7b5XcA", notes: "โดนัท" },
+                    { id: "poi107", name: "Divine Bull Statue", mapLink: "https://maps.google.com/maps/contrib/103125462168316429196", notes: "รูปปั้นวัวศักดิ์สิทธิ์" },
+                    { id: "poi108", name: "Osaka Kizu Wholesale Market", mapLink: "https://maps.app.goo.gl/P2xV5eGjKqTfR9X9A", notes: "ตลาดปลาโอซาก้า" },
+                    { id: "poi109", name: "หอคอยแห่งดวงอาทิตย์ (Tower of the Sun)", mapLink: "https://maps.app.goo.gl/eB2qQfXnQdYg2xXp9", notes: "Expo '70 Commemorative Park" },
+                    { id: "poi110", name: "วัดนันโซอิน (Nanzoin Temple)", mapLink: "https://maps.google.com/maps/contrib/112916389657720548066", notes: "พระนอนใหญ่" },
+                    { id: "poi111", name: "LaLa Port Fukuoka (กันดั้ม)", mapLink: "https://maps.app.goo.gl/tBqXbL9q5YqJ3H8v9", notes: "ห้างกันดั้ม" },
+                    { id: "poi112", name: "ฟูกูโอกะทาวเวอร์ (Fukuoka Tower)", mapLink: "https://maps.app.goo.gl/mZq3fBv6jYx9b6xK8", notes: "จุดชมวิว" },
+                    { id: "poi113", name: "Mt.Sarakura Sky Dome", mapLink: "https://maps.google.com/maps/contrib/109812723375297914686", notes: "จุดชมวิวกลางคืน คิตะคิวชู" },
+                    { id: "poi114", name: "Wakato Bridge", mapLink: "https://maps.app.goo.gl/aC2uYn5h9wQ6eGz8A", notes: "สะพานแขวน คิตะคิวชู" },
+                    { id: "poi115", name: "Ainoshima Island (เกาะแมว)", mapLink: "https://maps.app.goo.gl/uXj9xH8tYyYqP6fA7", notes: "เกาะแมว" },
+                    { id: "poi116", name: "ศาลเจ้ามิยาจิดาเกะ", mapLink: "https://maps.google.com/maps/contrib/101559216444717905389", notes: "ศาลเจ้า" },
+                    { id: "poi117", name: "อนุสรณ์สันติภาพฮิโระชิมะ (Peace Memorial)", mapLink: "https://maps.app.goo.gl/tFqE6r3jS6mYm9pJA", notes: "ฮิโรชิมะ" },
+                    { id: "poi118", name: "Miyajima Ferry Terminal", mapLink: "https://maps.app.goo.gl/Wq4eYfWbCjD9gYxJ9", notes: "ท่าเรือไปเกาะมิยาจิมะ" },
+                    { id: "poi119", name: "Hypocenter Park", mapLink: "https://maps.google.com/maps/contrib/115916215146949409617", notes: "สวนสันติภาพนางาซากิ" },
+                    { id: "poi120", name: "Kumamon Port Yatsushiro", mapLink: "https://maps.app.goo.gl/yYv3fM4p8qG7z6qF9", notes: "ท่าเรือคุมะมง" },
+                    { id: "poi121", name: "Kia Ora Budget Stay", mapLink: "https://maps.app.goo.gl/FkG7cZ7gJqR9xQyP7", notes: "ที่พัก (ตัวเลือก?)" }
+                ]
+            };
+            await setDoc(docRef, initialData);
+        }
+        
+        // --- Main UI Rendering Functions ---
+        // (All render functions are identical to the previous file)
+        
+        function renderUI(data) {
+            if (!data) return;
+            const safeData = {
+                dailyItinerary: data.dailyItinerary || [],
+                checklist: data.checklist || [],
+                expenses: data.expenses || [],
+                poiCatalog: data.poiCatalog || [],
+                flightInfo: data.flightInfo || [],
+                accommodations: data.accommodations || []
+            };
+            try { renderDailyItinerary(safeData.dailyItinerary, safeData.poiCatalog); } catch (e) { displayError("Error in renderDailyItinerary", e); }
+            try { renderChecklist(safeData.checklist); } catch (e) { displayError("Error in renderChecklist", e); }
+            try { renderExpenses(safeData.expenses); } catch (e) { displayError("Error in renderExpenses", e); }
+            try { renderPOI(safeData.poiCatalog); } catch (e) { displayError("Error in renderPOI", e); }
+            try { renderFlights(safeData.flightInfo); } catch (e) { displayError("Error in renderFlights", e); }
+            try { renderAccommodations(safeData.accommodations); } catch (e) { displayError("Error in renderAccommodations", e); }
+        }
+
+        function renderFlights(flightInfo) {
+            const container = document.getElementById('flight-info-container');
+            if (!container) return;
+            container.innerHTML = flightInfo.map(info => `
+                <div class="mb-4">
+                    <h4 class="font-semibold text-lg text-gray-800">${info.title}</h4>
+                    <ul class="list-disc list-inside text-gray-700">
+                        ${info.flights.map(f => `<li>${f}</li>`).join('')}
+                    </ul>
+                </div>
+            `).join('');
+        }
+
+        function renderAccommodations(accommodations) {
+            const container = document.getElementById('accommodation-container');
+            if (!container) return;
+            container.innerHTML = accommodations.map(acc => `
+                <div class="mb-4">
+                    <h4 class="font-semibold text-lg text-gray-800">${acc.name}</h4>
+                    <p class="text-sm text-gray-600">${acc.dates} | ${acc.address}</p>
+                    <p class="text-sm text-gray-600">📍 ${acc.station}</p>
+                    <p class="text-sm text-gray-600">ราคา: ${acc.priceTHB.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</p>
+                    <a href="${acc.mapLink}" target="_blank" class="text-blue-600 hover:underline text-sm">ดูแผนที่ Google Maps</a>
+                </div>
+            `).join('');
+        }
+
+        function renderDailyItinerary(itinerary, poiCatalog) {
+            const container = document.getElementById('daily-itinerary-container');
+            if (!container) return;
+            
+            container.innerHTML = itinerary.map((dayItem, index) => {
+                const timelineHtml = (dayItem.items || []).sort((a, b) => a.time.localeCompare(b.time)).map(item => `
+                    <div class="timeline-item pb-4">
+                                <div class="timeline-dot"></div>
+                                <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="font-semibold text-gray-800">${item.time}</span>
+                                    <p class="text-gray-700">${item.text.replace(/\n/g, '<br>')}</p>
+                                </div>
+                                <div class="flex-shrink-0 ml-2">
+                                    <button onclick="window.app.editDailyItem(${index}, '${item.id}')"
+                                        class="text-blue-500 hover:text-blue-700 text-sm font-medium">แก้ไข</button>
+                                    <button onclick="window.app.removeDailyItem(${index}, '${item.id}')" 
+                                        class="text-red-500 hover:text-red-700 text-sm font-medium ml-2">ลบ</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                const poiOptions = poiCatalog.map(poi => 
+                    `<option value="${poi.id}">${poi.name}</option>`
+                ).join('');
+
+                return `
+                <details ${index === 0 ? 'open' : ''} class="mb-2 bg-white shadow-sm rounded-lg overflow-hidden">
+                    <summary class="font-semibold p-4 cursor-pointer hover:bg-gray-50 flex justify-between items-center gap-2">
+                        <input type="text" id="day-header-input-${index}" value="${dayItem.day}" 
+                               class="font-semibold text-lg p-2 border border-transparent hover:border-gray-300 rounded-md flex-grow focus:border-blue-500 focus:ring-blue-500">
+                        <button onclick="window.app.updateDayHeader(${index})" 
+                                class="ml-2 px-3 py-1 bg-gray-100 text-sm rounded-md hover:bg-gray-200 flex-shrink-0">บันทึกชื่อวัน</button>
+                    </summary>
+                    <div class="p-4 border-t border-gray-200">
+                        <div class="mb-4">
+                            ${timelineHtml || '<p class="text-gray-500 text-sm">ยังไม่มีกิจกรรมในวันนี้</p>'}
+                        </div>
+                        
+                        <div class="mt-4 pt-4 border-t">
+                            <h4 class="font-semibold mb-2">เพิ่มกิจกรรมใหม่ในวันนี้</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                <input type="time" id="item-time-${index}" class="p-2 border border-gray-300 rounded-md" value="09:00">
+                                <input type="text" id="item-text-${index}" placeholder="รายละเอียดกิจกรรม" class="md:col-span-2 p-2 border border-gray-300 rounded-md">
+                            </div>
+                            <div class="flex items-center gap-2 mt-2">
+                                <select id="poi-select-${index}" class="flex-grow p-2 border border-gray-300 rounded-md">
+                                    <option value="">-- เลือกสถานที่จากไดเรกทอรี --</option>
+                                    ${poiOptions}
+                                </select>
+                                <button onclick="window.app.addPoiToText(${index})" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-sm">ใช้</button>
+                            </div>
+                            <button id="add-item-btn-${index}" onclick="window.app.addDailyItem(${index})"
+                                class="mt-2 w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                                + เพิ่มกิจกรรม
+                            </button>
+                            <button id="update-item-btn-${index}"
+                                class="hidden mt-2 w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                                ✓ บันทึกการแก้ไข
+                            </button>
+                            <button id="cancel-edit-btn-${index}" onclick="window.app.cancelEdit(${index})"
+                                class="hidden mt-2 w-full px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600">
+                                ยกเลิก
+                            </button>
+                        </div>
+                    </div>
+                </details>
+            `;
+            }).join('');
+        }
+
+        function renderChecklist(checklist) {
+            const list = document.getElementById('checklist-list');
+            const noChecklist = document.getElementById('no-checklist');
+            if (!list || !noChecklist) return;
+
+            list.innerHTML = '';
+            
+            const sortedList = (checklist || []).sort((a, b) => a.done - b.done); 
+            noChecklist.classList.toggle('hidden', sortedList.length > 0);
+
+            sortedList.forEach(item => {
+                const isDone = item.done;
+                list.innerHTML += `
+                    <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
+                        <span class="${isDone ? 'text-gray-500' : 'text-gray-800'}">${item.name}</span>
+                        <button onclick="window.app.toggleChecklistItem('${item.id}', ${!isDone})" 
+                                class="px-2 py-1 text-sm text-white rounded-md 
+                                ${isDone 
+                                    ? 'bg-gray-500 hover:bg-gray-600'
+                                    : 'bg-green-500 hover:bg-green-600'
+                                }">
+                            ${isDone ? 'ยังไม่ทำ' : 'ทำแล้ว'}
+                        </button>
+                    </li>
+                `;
+            });
+        }
+
+        function renderExpenses(expenses) {
+            const list = document.getElementById('expenses-list');
+            const total = document.getElementById('expenses-total');
+            const noExpenses = document.getElementById('no-expenses');
+            if (!list || !total || !noExpenses) return;
+
+            list.innerHTML = '';
+            noExpenses.classList.toggle('hidden', expenses.length > 0);
+
+            let sum = 0;
+            expenses.forEach(exp => {
+                list.innerHTML += `
+                    <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
+                        <span>${exp.name}</span>
+                        <span class="${exp.amount >= 0 ? 'text-gray-700' : 'text-red-600'} font-medium">
+                            ${exp.amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })} ${exp.currency}
+                        </span>
+                    </li>
+                `;
+                sum += exp.amount;
+            });
+            total.textContent = `ยอดรวม: ${sum.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท`;
+        }
+        
+        function renderPOI(poiCatalog) {
+            const list = document.getElementById('poi-list');
+            if (!list) return;
+            list.innerHTML = '';
+            (poiCatalog || []).forEach(poi => {
+                const notesHtml = poi.notes 
+                    ? `<p class="text-sm text-gray-600 mt-1"><em>โน้ต: ${poi.notes}</em></p>` 
+                    : '';
+
+                list.innerHTML += `
+                    <li class="p-2 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <span class="font-medium">${poi.name}</span>
+                            <a href="${poi.mapLink}" target="_blank" class="text-blue-600 hover:underline text-sm">แผนที่</a>
+                        </div>
+                        ${notesHtml}
+                        <button onclick="window.app.removePOI('${poi.id}')" class="mt-1 text-xs text-red-500 hover:underline">ลบ</button>
+                    </li>
+                `;
+            });
+        }
+
+        // --- Database Update Functions (Exposed via window.app) ---
+
+        async function updateItinerary(newItinerary) {
+            try {
+                // *** อัปเดตเส้นทาง (Path) ให้ตรงกับตอนโหลด ***
+                const docRef = doc(db, "tripPlans", tripDocId);
+                await updateDoc(docRef, { dailyItinerary: newItinerary });
+            } catch (error) {
+                displayError("ไม่สามารถอัปเดตแผนรายวันได้", error);
+            }
+        }
+
+        let currentEdit = { dayIndex: null, itemId: null };
+
+        async function updateDayHeader(dayIndex) {
+            const input = document.getElementById(`day-header-input-${dayIndex}`);
+            if (!input || !appData) return;
+            const newTitle = input.value.trim();
+            if (!newTitle) return;
+
+            const newItinerary = appData.dailyItinerary.map((day, index) => {
+                if (index === dayIndex) {
+                    return { ...day, day: newTitle };
+                }
+                return day;
+            });
+            await updateItinerary(newItinerary);
+        }
+
+        function editDailyItem(dayIndex, itemId) {
+            const item = appData.dailyItinerary[dayIndex].items.find(i => i.id === itemId);
+            if (!item) return;
+
+            currentEdit = { dayIndex, itemId };
+
+            document.getElementById(`item-time-${dayIndex}`).value = item.time;
+            document.getElementById(`item-text-${dayIndex}`).value = item.text;
+
+            document.getElementById(`add-item-btn-${dayIndex}`).classList.add('hidden');
+            document.getElementById(`update-item-btn-${dayIndex}`).classList.remove('hidden');
+            document.getElementById(`cancel-edit-btn-${dayIndex}`).classList.remove('hidden');
+
+            document.getElementById(`update-item-btn-${dayIndex}`).onclick = () => window.app.updateDailyItem();
+            
+            const formInput = document.getElementById(`item-time-${dayIndex}`);
+            formInput.focus();
+            formInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function cancelEdit(dayIndex) {
+            currentEdit = { dayIndex: null, itemId: null };
+            document.getElementById(`item-time-${dayIndex}`).value = '09:00';
+            document.getElementById(`item-text-${dayIndex}`).value = '';
+
+            document.getElementById(`add-item-btn-${dayIndex}`).classList.remove('hidden');
+            document.getElementById(`update-item-btn-${dayIndex}`).classList.add('hidden');
+            document.getElementById(`cancel-edit-btn-${dayIndex}`).classList.add('hidden');
+        }
+
+        async function updateDailyItem() {
+            const { dayIndex, itemId } = currentEdit;
+            if (dayIndex === null || !itemId) return;
+
+            const timeInput = document.getElementById(`item-time-${dayIndex}`);
+            const textInput = document.getElementById(`item-text-${dayIndex}`);
+            
+            const newTime = timeInput.value;
+            const newText = textInput.value.trim();
+
+            if (!newText) {
+                alert("กรุณาใส่รายละเอียดกิจกรรม");
+                return;
+            }
+
+            const newItinerary = appData.dailyItinerary.map((day, index) => {
+                if (index === dayIndex) {
+                    const newItems = day.items.map(item => {
+                        if (item.id === itemId) {
+                            return { ...item, time: newTime, text: newText };
+                        }
+                        return item;
+                    });
+                    return { ...day, items: newItems };
+                }
+                return day;
+            });
+            
+            await updateItinerary(newItinerary); 
+            cancelEdit(dayIndex); 
+        }
+
+
+        async function addDailyItem(dayIndex) {
+            const timeInput = document.getElementById(`item-time-${dayIndex}`);
+            const textInput = document.getElementById(`item-text-${dayIndex}`);
+            if (!timeInput || !textInput || !appData) return;
+
+            const time = timeInput.value;
+            const text = textInput.value.trim();
+
+            if (!text) {
+                alert("กรุณาใส่รายละเอียดกิจกรรม");
+                return;
+            }
+
+            const newItem = {
+                id: `item${Date.now()}`,
+                time: time,
+                text: text
+            };
+
+            const newItinerary = appData.dailyItinerary.map((day, index) => {
+                if (index === dayIndex) {
+                    const newItems = (day.items || []).concat(newItem);
+                    return { ...day, items: newItems };
+                }
+                return day;
+            });
+            
+            await updateItinerary(newItinerary);
+            textInput.value = '';
+        }
+        
+        async function removeDailyItem(dayIndex, itemId) {
+            if (!appData) return;
+
+            const newItinerary = appData.dailyItinerary.map((day, index) => {
+                if (index === dayIndex) {
+                    const newItems = (day.items || []).filter(item => item.id !== itemId);
+                    return { ...day, items: newItems };
+                }
+                return day;
+            });
+
+            await updateItinerary(newItinerary);
+        }
+
+        async function addDay() {
+            if (!appData) return;
+            const newDayNum = appData.dailyItinerary.length + 1;
+            const newDay = {
+                day: `วันที่ ${newDayNum} (ระบุวันที่)`,
+                items: []
+            };
+            
+            try {
+                const docRef = doc(db, "tripPlans", tripDocId);
+                await updateDoc(docRef, {
+                    dailyItinerary: arrayUnion(newDay)
+                });
+            } catch (error) {
+                displayError("ไม่สามารถเพิ่มวันใหม่ได้", error);
+            }
+        }
+
+        function addPoiToText(dayIndex) {
+            const selectInput = document.getElementById(`poi-select-${dayIndex}`);
+            const textInput = document.getElementById(`item-text-${dayIndex}`);
+            if (!selectInput || !textInput || !appData) return;
+            
+            const selectedPoiId = selectInput.value;
+            if (selectedPoiId) {
+                const poi = appData.poiCatalog.find(p => p.id === selectedPoiId);
+                if (poi) {
+                    let poiText = `${poi.name} (แผนที่: ${poi.mapLink})`;
+                    if (poi.notes && poi.notes.trim() !== '') {
+                        poiText += ` [โน้ต: ${poi.notes}]`;
+                    }
+                    textInput.value = (textInput.value.trim() + ` ${poiText}`).trim();
+                }
+                selectInput.value = ""; 
+            }
+        }
+
+        async function addExpense() {
+            const nameInput = document.getElementById('expense-name');
+            const amountInput = document.getElementById('expense-amount');
+            if (!nameInput || !amountInput) return;
+
+            const name = nameInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+
+            if (name && !isNaN(amount)) {
+                const newExpense = {
+                    id: `exp${Date.now()}`,
+                    name: name,
+                    amount: amount,
+                    currency: "THB"
+                };
+                try {
+                    const docRef = doc(db, "tripPlans", tripDocId);
+                    await updateDoc(docRef, { expenses: arrayUnion(newExpense) });
+                    nameInput.value = '';
+                    amountInput.value = '';
+                } catch (error) {
+                    displayError("ไม่สามารถเพิ่มรายจ่ายได้", error);
+                }
+            }
+        }
+
+        async function addChecklistItem() {
+            const input = document.getElementById('checklist-name');
+            if (!input) return;
+            const name = input.value.trim();
+            if (name) {
+                const newItem = {
+                    id: `chk${Date.now()}`,
+                    name: name,
+                    done: false
+                };
+                try {
+                    const docRef = doc(db, "tripPlans", tripDocId);
+                    await updateDoc(docRef, { checklist: arrayUnion(newItem) });
+                    input.value = '';
+                } catch (error) {
+                    displayError("ไม่สามารถเพิ่มรายการ Checklist ได้", error);
+                }
+            }
+        }
+        
+        async function toggleChecklistItem(id, isDone) {
+            if (!appData) return;
+            const newChecklist = appData.checklist.map(item => {
+                if (item.id === id) {
+                    return { ...item, done: isDone };
+                }
+                return item;
+            });
+            try {
+                const docRef = doc(db, "tripPlans", tripDocId);
+                await updateDoc(docRef, { checklist: newChecklist });
+            } catch (error) {
+                displayError("ไม่สามารถอัปเดต Checklist ได้", error);
+            }
+        }
+
+        async function addPOI() {
+            const nameInput = document.getElementById('poi-name');
+            const linkInput = document.getElementById('poi-link');
+            const notesInput = document.getElementById('poi-notes'); 
+            if (!nameInput || !linkInput || !notesInput) return;
+
+            const name = nameInput.value.trim();
+            const mapLink = linkInput.value.trim();
+            const notes = notesInput.value.trim(); 
+
+            if (name && mapLink) {
+                const newPOI = {
+                    id: `poi${Date.now()}`,
+                    name: name,
+                    mapLink: mapLink,
+                    notes: notes 
+                };
+                try {
+                    const docRef = doc(db, "tripPlans", tripDocId);
+                    await updateDoc(docRef, { poiCatalog: arrayUnion(newPOI) });
+                    nameInput.value = '';
+                    linkInput.value = '';
+                    notesInput.value = ''; 
+                } catch (error) {
+                    displayError("ไม่สามารถเพิ่ม POI ได้", error);
+                }
+            }
+        }
+
+        async function removePOI(id) {
+            if (!appData) return;
+            const poiToRemove = appData.poiCatalog.find(poi => poi.id === id);
+            if (poiToRemove) {
+                try {
+                    const docRef = doc(db, "tripPlans", tripDocId);
+                    await updateDoc(docRef, { poiCatalog: arrayRemove(poiToRemove) });
+                } catch (error) {
+                    displayError("ไม่สามารถลบ POI ได้", error);
+                }
+            }
+        }
+
+        // --- Expose functions to global scope for inline onclick ---
+        window.app = {
+            addDailyItem,
+            removeDailyItem,
+            addDay,
+            addPoiToText,
+            addExpense,
+            addChecklistItem,
+            toggleChecklistItem,
+            addPOI,
+            removePOI,
+            updateDayHeader, 
+            editDailyItem,   
+            updateDailyItem, 
+            cancelEdit       
+        };
+
+        // --- Start Application ---
+        document.addEventListener('DOMContentLoaded', initFirebaseAndAuth);
+
+    </script>
+</head>
+
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+
+        <!-- Header -->
+        <header class="mb-6">
+            <h1 class="text-4xl font-bold text-gray-900">โครงแผนการเดินทาง (หมี & แมว)</h1>
+            <p class="text-lg text-gray-600">ทริปญี่ปุ่น (Fukuoka → Osaka) 27 ธ.ค. 2568 - 3 ม.ค. 2569</p>
+        </header>
+
+        <!-- Error Message Bar -->
+        <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
+            <!-- Error text will be inserted here by displayError() -->
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Left Column (Main) -->
+            <div class="lg:col-span-2 space-y-6">
+
+                <!-- 1. Daily Itinerary -->
+                <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                    <h2 class="text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">🗺️ แผนการเดินทางรายวัน</h2>
+                    <div id="daily-itinerary-container" class="p-5 space-y-2">
+                        <!-- Daily itinerary items will be rendered here -->
+                    </div>
+                    <div class="p-5 border-t border-gray-200">
+                        <button onclick="window.app.addDay()" class="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+                            + เพิ่มวันเดินทางใหม่
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. Accommodation -->
+                <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                    <h2 class="text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">🏨 ที่พักที่จองแล้ว</h2>
+                    <div id="accommodation-container" class="p-5 divide-y divide-gray-200">
+                        <!-- Accommodation info will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- 3. Flight Info -->
+                <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                    <h2 class="text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">✈️ ข้อมูลเที่ยวบินหลัก</h2>
+                    <div id="flight-info-container" class="p-5 divide-y divide-gray-200">
+                        <!-- Flight info will be rendered here -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column (Sidebar) -->
+            <div class="space-y-6">
+
+                <!-- 1. Checklist -->
+                <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                    <h2 class="text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">📋 รายการที่ต้องทำ</h2>
+                    <div class="p-5">
+                        <ul id="checklist-list" class="space-y-1 mb-4">
+                            <!-- Checklist items will be rendered here -->
+                        </ul>
+                        <p id="no-checklist" class="text-gray-500 text-sm hidden">ไม่มีรายการ</p>
+
+                        <div class="mt-4 flex space-x-2 border-t pt-4">
+                            <input type="text" id="checklist-name" placeholder="เพิ่มรายการใหม่"
+                                class="flex-grow p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                            <button onclick="window.app.addChecklistItem()"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">เพิ่ม</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Expenses -->
+                <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                    <h2 class="text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">💸 รายจ่าย</h2>
+                    <div class="p-5">
+                        <ul id="expenses-list" class="space-y-1 mb-4">
+                            <!-- Expenses items here -->
+                        </ul>
+                        <p id="no-expenses" class="text-gray-500 text-sm hidden">ไม่มีรายจ่าย</p>
+                        
+                        <div class="border-t pt-4">
+                            <h3 id="expenses-total" class="text-lg font-semibold text-right text-gray-800">ยอดรวม: 0.00 บาท</h3>
+                        </div>
+
+                        <div class="mt-4 space-y-2">
+                            <input type="text" id="expense-name" placeholder="ชื่อรายการ"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                            <input type="number" id="expense-amount" placeholder="จำนวนเงิน (บาท)"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                            <button onclick="window.app.addExpense()"
+                                class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">บันทึกรายจ่าย</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. POI Directory -->
+                <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                    <h2 class="text-2xl font-semibold text-gray-800 p-5 border-b border-gray-200">📍 ไดเรกทอรีสถานที่ (POI)</h2>
+                    <div class="p-5">
+                        <ul id="poi-list" class="space-y-3 mb-4 max-h-60 overflow-y-auto">
+                            <!-- POI items here -->
+                        </ul>
+                        <div class="mt-4 space-y-2 border-t pt-4">
+                            <h3 class="font-semibold">เพิ่มสถานที่ใหม่</h3>
+                            <input type="text" id="poi-name" placeholder="ชื่อสถานที่"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="poi-link" placeholder="ลิงก์ Google Maps"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="poi-notes" placeholder="โน้ตย่อ (เช่น 'ราเม็ง 24 ชม.')"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                            <button onclick="window.app.addPOI()"
+                                class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">เพิ่มเข้าไดเรกทอรี</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div> <!-- End Grid -->
+    </div> <!-- End Container -->
+</body>
+
+</html>
