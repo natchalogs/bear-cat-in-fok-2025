@@ -42,6 +42,20 @@
             border-radius: 9999px;
             border: 2px solid white;
         }
+
+        /* NEW: Loading Spinner */
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3b82f6; /* Blue */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
     <script type="module">
         // Firebase Imports
@@ -49,9 +63,9 @@
         import {
             getAuth,
             onAuthStateChanged,
-            GoogleAuthProvider, // Import Google Auth
-            signInWithPopup,    // Import Popup sign-in
-            signOut             // Import Sign out
+            GoogleAuthProvider,
+            signInWithPopup,
+            signOut
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import {
             getFirestore,
@@ -67,7 +81,7 @@
 
         // --- Global Variables ---
         let app, db, auth;
-        let userId, userDisplayName; // Store user's name
+        let userId, userDisplayName;
         const tripDocId = "mhee-maew-trip-2025"; 
         let appData = null; 
         let unsubscribeTrip = null; 
@@ -114,8 +128,9 @@
                 auth = getAuth(app);
                 setLogLevel('Debug');
 
-                // NEW AUTH LOGIC
+                // MODIFIED AUTH LOGIC
                 onAuthStateChanged(auth, async (user) => {
+                    const loadingScreen = document.getElementById('loading-screen');
                     const mainApp = document.getElementById('main-app');
                     const loginScreen = document.getElementById('login-screen');
                     const userDisplay = document.getElementById('user-display');
@@ -124,9 +139,8 @@
                     if (user) {
                         // User is signed in
                         userId = user.uid;
-                        userDisplayName = user.displayName || user.email; // Get user's name
+                        userDisplayName = user.displayName || user.email;
 
-                        // Show app, hide login
                         mainApp.classList.remove('hidden');
                         loginScreen.classList.add('hidden');
                         userDisplay.textContent = `สวัสดี, ${userDisplayName}`;
@@ -137,26 +151,27 @@
                         // User is signed out
                         userId = null;
                         userDisplayName = null;
-                        if (unsubscribeTrip) unsubscribeTrip(); // Stop listening to data
+                        if (unsubscribeTrip) unsubscribeTrip(); 
 
-                        // Show login, hide app
                         mainApp.classList.add('hidden');
                         loginScreen.classList.remove('hidden');
                         userDisplay.textContent = '';
                         logoutButton.classList.add('hidden');
                     }
+                    
+                    // Hide loading screen *after* deciding which screen to show
+                    loadingScreen.classList.add('hidden');
                 });
             } catch (error) {
                 displayError("ไม่สามารถเริ่มต้น Firebase ได้", error);
             }
         }
         
-        // --- NEW Google Login/Logout Functions ---
+        // (Google Login/Logout Functions remain the same)
         async function signInWithGoogle() {
             const provider = new GoogleAuthProvider();
             try {
                 await signInWithPopup(auth, provider);
-                // onAuthStateChanged will handle the rest
             } catch (error) {
                 displayError("ไม่สามารถล็อกอินด้วย Google ได้", error);
             }
@@ -165,14 +180,12 @@
         async function signOutApp() {
             try {
                 await signOut(auth);
-                // onAuthStateChanged will handle the rest
             } catch (error) {
                 displayError("ไม่สามารถล็อกเอาต์ได้", error);
             }
         }
 
-        // --- Data Loading and Rendering ---
-        // (loadDataAndRender and initializeDocument remain mostly the same)
+        // (loadDataAndRender and initializeDocument remain the same)
         async function loadDataAndRender() {
             if (!db || !tripDocId) return;
             const docRef = doc(db, "tripPlans", tripDocId);
@@ -199,7 +212,6 @@
             }
         }
 
-        // (initializeDocument remains the same)
         async function initializeDocument(docRef) {
             const initialData = {
                 flightInfo: [
@@ -222,7 +234,7 @@
                         name: "旧P203 Phoenix inn (Fukuoka)",
                         dates: "27 ธ.ค. - 30 ธ.ค.",
                         address: "5-chōme-4-15 Katakasu, Hakata Ward",
-                        mapLink: "https://maps.app.goo.gl/XKwhDnKECUdxR7169",
+                        mapLink: "https://www.google.com/maps/place/5-ch%C5%8Dme-4-15+Katakasu,+Hakata+Ward,+Fukuoka,+812-0043,+Japan", // FIXED LINK
                         priceTHB: 4553.31,
                         station: "สถานี Hakata (เดินประมาณ 5-10 นาที)"
                     },
@@ -230,7 +242,7 @@
                         name: "天王寺204 (Osaka)",
                         dates: "30 ธ.ค. - 3 ม.ค.",
                         address: "南河堀町10-3, 大阪市天王寺区",
-                        mapLink: "https://maps.app.goo.gl/e14j5F8ffJC8mmuo7",
+                        mapLink: "https://www.google.com/maps/place/10-3+Minamikawahorich%C5%8D,+Tenn%C5%8Dji+Ward,+Osaka,+543-0054,+Japan", // FIXED LINK
                         priceTHB: 5190.00,
                         station: "สถานี JR Tennoji (เดิน 3 นาที)"
                     }
@@ -258,32 +270,32 @@
                     { id: "chk5", name: "แลกเงินเยน", done: false, createdBy: "System" }
                 ],
                 poiCatalog: [
-                    // (All POI data remains the same)
-                    { id: "poi1", name: "Shisui Premium Outlets", mapLink: "https://maps.app.goo.gl/SGofBWH22DN7YC25A", notes: "Outlet ใกล้สนามบิน (เผื่อแวะ)", createdBy: "System" },
-                    { id: "poi2", name: "วัดคินคะคุจิ (Kinkaku-ji)", mapLink: "https://maps.app.goo.gl/5fSj1fJ7kL7xG7Yq8", notes: "วัดทอง", createdBy: "System" },
-                    { id: "poi3", name: "Canal City Hakata", mapLink: "https://maps.app.goo.gl/95a3pGfYx6Yg9GgUA", notes: "ห้างใหญ่ แหล่งช้อปปิ้ง", createdBy: "System" },
-                    { id: "poi4", name: "Dotonbori Glico Sign", mapLink: "https://maps.app.goo.gl/iG3fE6fUqjYmCg9HA", notes: "ป้ายกูลิโกะ", createdBy: "System" },
-                    { id: "poi101", name: "Higashi Park (สวนฮิงาชิ)", mapLink: "https://maps.google.com/maps/contrib/101681164755352778011", notes: "สวนสาธารณะ", createdBy: "System" },
-                    { id: "poi102", name: "Hakata Ramen Hakataya Kawabata", mapLink: "https://maps.app.goo.gl/ToNCwiT359YPM1Ha7", notes: "ราเม็ง", createdBy: "System" },
-                    { id: "poi103", name: "LaLaport Kadoma / Mitsui Outlet", mapLink: "https://maps.app.goo.gl/9gCXN11f9NqYd3Wn8", notes: "Outlet โอซาก้า", createdBy: "System" },
-                    { id: "poi104", name: "Yanagibashi Rengo Market", mapLink: "https://maps.google.com/maps/contrib/113106483043824772363", notes: "ตลาดรวมยานางิบาชิ", createdBy: "System" },
-                    { id: "poi105", name: "Osaka City Hall", mapLink: "https://maps.app.goo.gl/z28nQkGhsK6kGkST9", notes: "ศาลาว่าการโอซาก้า", createdBy: "System" },
-                    { id: "poi106", name: "JACK IN THE DONUTS 福岡天神店", mapLink: "https://maps.app.goo.gl/E4L9vGj9gqR7b5XcA", notes: "โดนัท", createdBy: "System" },
-                    { id: "poi107", name: "Divine Bull Statue", mapLink: "https://maps.google.com/maps/contrib/103125462168316429196", notes: "รูปปั้นวัวศักดิ์สิทธิ์", createdBy: "System" },
-                    { id: "poi108", name: "Osaka Kizu Wholesale Market", mapLink: "https://maps.app.goo.gl/P2xV5eGjKqTfR9X9A", notes: "ตลาดปลาโอซาก้า", createdBy: "System" },
-                    { id: "poi109", name: "หอคอยแห่งดวงอาทิตย์ (Tower of the Sun)", mapLink: "https://maps.app.goo.gl/eB2qQfXnQdYg2xXp9", notes: "Expo '70 Commemorative Park", createdBy: "System" },
-                    { id: "poi110", name: "วัดนันโซอิน (Nanzoin Temple)", mapLink: "https://maps.google.com/maps/contrib/112916389657720548066", notes: "พระนอนใหญ่", createdBy: "System" },
-                    { id: "poi111", name: "LaLa Port Fukuoka (กันดั้ม)", mapLink: "https://maps.app.goo.gl/tBqXbL9q5YqJ3H8v9", notes: "ห้างกันดั้ม", createdBy: "System" },
-                    { id: "poi112", name: "ฟูกูโอกะทาวเวอร์ (Fukuoka Tower)", mapLink: "https://maps.app.goo.gl/mZq3fBv6jYx9b6xK8", notes: "จุดชมวิว", createdBy: "System" },
-                    { id: "poi113", name: "Mt.Sarakura Sky Dome", mapLink: "https://maps.google.com/maps/contrib/109812723375297914686", notes: "จุดชมวิวกลางคืน คิตะคิวชู", createdBy: "System" },
-                    { id: "poi114", name: "Wakato Bridge", mapLink: "https://maps.app.goo.gl/aC2uYn5h9wQ6eGz8A", notes: "สะพานแขวน คิตะคิวชู", createdBy: "System" },
-                    { id: "poi115", name: "Ainoshima Island (เกาะแมว)", mapLink: "https://maps.app.goo.gl/uXj9xH8tYyYqP6fA7", notes: "เกาะแมว", createdBy: "System" },
-                    { id: "poi116", name: "ศาลเจ้ามิยาจิดาเกะ", mapLink: "https://maps.google.com/maps/contrib/101559216444717905389", notes: "ศาลเจ้า", createdBy: "System" },
-                    { id: "poi117", name: "อนุสรณ์สันติภาพฮิโระชิมะ (Peace Memorial)", mapLink: "https://maps.app.goo.gl/tFqE6r3jS6mYm9pJA", notes: "ฮิโรชิมะ", createdBy: "System" },
-                    { id: "poi118", name: "Miyajima Ferry Terminal", mapLink: "https://maps.app.goo.gl/Wq4eYfWbCjD9gYxJ9", notes: "ท่าเรือไปเกาะมิยาจิมะ", createdBy: "System" },
-                    { id: "poi119", name: "Hypocenter Park", mapLink: "https://maps.google.com/maps/contrib/115916215146949409617", notes: "สวนสันติภาพนางาซากิ", createdBy: "System" },
-                    { id: "poi120", name: "Kumamon Port Yatsushiro", mapLink: "https://maps.app.goo.gl/yYv3fM4p8qG7z6qF9", notes: "ท่าเรือคุมะมง", createdBy: "System" },
-                    { id: "poi121", name: "Kia Ora Budget Stay", mapLink: "https://maps.app.goo.gl/FkG7cZ7gJqR9xQyP7", notes: "ที่พัก (ตัวเลือก?)", createdBy: "System" }
+                    // --- ALL LINKS BELOW ARE FIXED TO BE PERMANENT ---
+                    { id: "poi1", name: "Shisui Premium Outlets", mapLink: "https://www.google.com/maps/place/Shisui+Premium+Outlets/", notes: "Outlet ใกล้สนามบิน (เผื่อแวะ)", createdBy: "System" },
+                    { id: "poi2", name: "วัดคินคะคุจิ (Kinkaku-ji)", mapLink: "https://www.google.com/maps/place/Kinkaku-ji/", notes: "วัดทอง", createdBy: "System" },
+                    { id: "poi3", name: "Canal City Hakata", mapLink: "https://www.google.com/maps/place/Canal+City+Hakata/", notes: "ห้างใหญ่ แหล่งช้อปปิ้ง", createdBy: "System" },
+                    { id: "poi4", name: "Dotonbori Glico Sign", mapLink: "https://www.google.com/maps/place/Dotonbori+Glico+Sign/", notes: "ป้ายกูลิโกะ", createdBy: "System" },
+                    { id: "poi101", name: "Higashi Park (สวนฮิงาชิ)", mapLink: "https://www.google.com/maps/place/Higashi+Park/", notes: "สวนสาธารณะ", createdBy: "System" },
+                    { id: "poi102", name: "Hakata Ramen Hakataya Kawabata", mapLink: "https://www.google.com/maps/place/Hakata+Ramen+Hakataya+Kawabata/", notes: "ราเม็ง", createdBy: "System" },
+                    { id: "poi103", name: "LaLaport Kadoma / Mitsui Outlet", mapLink: "https://www.google.com/maps/place/Mitsui+Shopping+Park+LaLaport+KADOMA/", notes: "Outlet โอซาก้า", createdBy: "System" },
+                    { id: "poi104", name: "Yanagibashi Rengo Market", mapLink: "https://www.google.com/maps/place/Yanagibashi+Rengo+Market/", notes: "ตลาดรวมยานางิบาชิ", createdBy: "System" },
+                    { id: "poi105", name: "Osaka City Hall", mapLink: "https://www.google.com/maps/place/Osaka+City+Hall/", notes: "ศาลาว่าการโอซาก้า", createdBy: "System" },
+                    { id: "poi106", name: "JACK IN THE DONUTS 福岡天神店", mapLink: "https://www.google.com/maps/place/JACK+IN+THE+DONUTS+Fukuoka+Tenjin/", notes: "โดนัท", createdBy: "System" },
+                    { id: "poi107", name: "Divine Bull Statue", mapLink: "https://www.google.com/maps/place/Statue+of+the+Divine+Ox/", notes: "รูปปั้นวัวศักดิ์สิทธิ์", createdBy: "System" },
+                    { id: "poi108", name: "Osaka Kizu Wholesale Market", mapLink: "https://www.google.com/maps/place/Osaka+Kizu+Wholesale+Market/", notes: "ตลาดปลาโอซาก้า", createdBy: "System" },
+                    { id: "poi109", name: "หอคอยแห่งดวงอาทิตย์ (Tower of the Sun)", mapLink: "https://www.google.com/maps/place/Tower+of+the+Sun/", notes: "Expo '70 Commemorative Park", createdBy: "System" },
+                    { id: "poi110", name: "วัดนันโซอิน (Nanzoin Temple)", mapLink: "https://www.google.com/maps/place/Nanzoin+Temple/", notes: "พระนอนใหญ่", createdBy: "System" },
+                    { id: "poi111", name: "LaLa Port Fukuoka (กันดั้ม)", mapLink: "https://www.google.com/maps/place/LaLaport+Fukuoka/", notes: "ห้างกันดั้ม", createdBy: "System" },
+                    { id: "poi112", name: "ฟูกูโอกะทาวเวอร์ (Fukuoka Tower)", mapLink: "https://www.google.com/maps/place/Fukuoka+Tower/", notes: "จุดชมวิว", createdBy: "System" },
+                    { id: "poi113", name: "Mt.Sarakura Sky Dome", mapLink: "https://www.google.com/maps/place/Mt.+Sarakura/", notes: "จุดชมวิวกลางคืน คิตะคิวชู", createdBy: "System" },
+                    { id: "poi114", name: "Wakato Bridge", mapLink: "https://www.google.com/maps/place/Wakato+Bridge/", notes: "สะพานแขวน คิตะคิวชู", createdBy: "System" },
+                    { id: "poi115", name: "Ainoshima Island (เกาะแมว)", mapLink: "https://www.google.com/maps/place/Ainoshima/", notes: "เกาะแมว", createdBy: "System" },
+                    { id: "poi116", name: "ศาลเจ้ามิยาจิดาเกะ", mapLink: "https://www.google.com/maps/place/Miyajidake+Shrine/", notes: "ศาลเจ้า", createdBy: "System" },
+                    { id: "poi117", name: "อนุสรณ์สันติภาพฮิโระชิมะ (Peace Memorial)", mapLink: "https://www.google.com/maps/place/Atomic+Bomb+Dome/", notes: "ฮิโรชิมะ", createdBy: "System" },
+                    { id: "poi118", name: "Miyajima Ferry Terminal", mapLink: "https://www.google.com/maps/place/Miyajima+Ferry+Terminal/", notes: "ท่าเรือไปเกาะมิยาจิมะ", createdBy: "System" },
+                    { id: "poi119", name: "Hypocenter Park", mapLink: "https://www.google.com/maps/place/Nagasaki+Hypocenter+Park/", notes: "สวนสันติภาพนางาซากิ", createdBy: "System" },
+                    { id: "poi120", name: "Kumamon Port Yatsushiro", mapLink: "https://www.google.com/maps/place/Kumamon+Port+Yatsushiro/", notes: "ท่าเรือคุมะมง", createdBy: "System" },
+                    { id: "poi121", name: "Kia Ora Budget Stay", mapLink: "https://www.google.com/maps/place/Kia+Ora+Budget+Stay/", notes: "ที่พัก (ตัวเลือก?)", createdBy: "System" }
                 ]
             };
             await setDoc(docRef, initialData);
@@ -343,7 +355,6 @@
             
             container.innerHTML = itinerary.map((dayItem, index) => {
                 const timelineHtml = (dayItem.items || []).sort((a, b) => a.time.localeCompare(b.time)).map(item => {
-                    // NEW: Show who created the item
                     const createdByHtml = item.createdBy 
                         ? `<p class="text-xs text-gray-400 italic mt-1">บันทึกโดย: ${item.createdBy.split(' ')[0]}</p>` 
                         : '';
@@ -372,13 +383,30 @@
                     `<option value="${poi.id}">${poi.name}</option>`
                 ).join('');
 
+                // NEW: Modified Summary for better editing UX
                 return `
                 <details ${index === 0 ? 'open' : ''} class="mb-2 bg-white shadow-sm rounded-lg overflow-hidden">
                     <summary class="font-semibold p-4 cursor-pointer hover:bg-gray-50 flex justify-between items-center gap-2">
-                        <input type="text" id="day-header-input-${index}" value="${dayItem.day}" 
-                               class="font-semibold text-lg p-2 border border-transparent hover:border-gray-300 rounded-md flex-grow focus:border-blue-500 focus:ring-blue-500">
-                        <button onclick="window.app.updateDayHeader(${index})" 
-                                class="ml-2 px-3 py-1 bg-gray-100 text-sm rounded-md hover:bg-gray-200 flex-shrink-0">บันทึกชื่อวัน</button>
+                        
+                        <!-- Display Mode -->
+                        <div id="day-header-display-${index}" class="flex justify-between items-center flex-grow">
+                            <span class="font-semibold text-lg text-gray-800">${dayItem.day}</span>
+                            <button onclick="window.app.toggleDayHeaderEdit(${index}, event, true)" 
+                                    class="ml-2 p-2 rounded-full hover:bg-gray-200 flex-shrink-0">
+                                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
+                            </button>
+                        </div>
+
+                        <!-- Edit Mode (Hidden by default) -->
+                        <div id="day-header-edit-${index}" class="hidden flex justify-between items-center flex-grow gap-2">
+                            <input type="text" id="day-header-input-${index}" value="${dayItem.day}" 
+                                   class="font-semibold text-lg p-2 border border-gray-300 rounded-md flex-grow focus:border-blue-500 focus:ring-blue-500">
+                            <button onclick="window.app.updateDayHeader(${index})" 
+                                    class="ml-2 px-3 py-1 bg-green-500 text-white text-sm rounded-md hover:bg-green-600 flex-shrink-0">บันทึก</button>
+                            <button onclick="window.app.toggleDayHeaderEdit(${index}, event, false)" 
+                                    class="px-3 py-1 bg-gray-400 text-white text-sm rounded-md hover:bg-gray-500 flex-shrink-0">ยกเลิก</button>
+                        </div>
+
                     </summary>
                     <div class="p-4 border-t border-gray-200">
                         <div class="mb-4">
@@ -429,7 +457,6 @@
 
             sortedList.forEach(item => {
                 const isDone = item.done;
-                // NEW: Show creator
                 const createdByHtml = item.createdBy 
                         ? `<span class="text-xs text-gray-400 italic ml-2">(โดย: ${item.createdBy.split(' ')[0]})</span>` 
                         : '';
@@ -464,7 +491,6 @@
 
             let sum = 0;
             expenses.forEach(exp => {
-                // NEW: Show creator
                 const createdByHtml = exp.createdBy 
                         ? `<span class="text-xs text-gray-400 italic block"> (โดย: ${exp.createdBy.split(' ')[0]})</span>` 
                         : '';
@@ -493,7 +519,6 @@
                 const notesHtml = poi.notes 
                     ? `<p class="text-sm text-gray-600 mt-1"><em>โน้ต: ${poi.notes}</em></p>` 
                     : '';
-                // NEW: Show creator
                 const createdByHtml = poi.createdBy 
                         ? `<p class="text-xs text-gray-400 italic mt-1">(โดย: ${poi.createdBy.split(' ')[0]})</p>` 
                         : '';
@@ -525,6 +550,33 @@
 
         let currentEdit = { dayIndex: null, itemId: null };
 
+        // NEW: Function to toggle edit mode for day header
+        function toggleDayHeaderEdit(dayIndex, event, isEditing) {
+            // Stop the event from bubbling up (which would open/close the <details>)
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+
+            const displayDiv = document.getElementById(`day-header-display-${dayIndex}`);
+            const editDiv = document.getElementById(`day-header-edit-${dayIndex}`);
+            const input = document.getElementById(`day-header-input-${dayIndex}`);
+            
+            if (isEditing) {
+                // Copy current text to input
+                const currentText = displayDiv.querySelector('span').textContent;
+                input.value = currentText;
+                
+                displayDiv.classList.add('hidden');
+                editDiv.classList.remove('hidden');
+                input.focus();
+                input.select();
+            } else {
+                displayDiv.classList.remove('hidden');
+                editDiv.classList.add('hidden');
+            }
+        }
+
         async function updateDayHeader(dayIndex) {
             const input = document.getElementById(`day-header-input-${dayIndex}`);
             if (!input || !appData) return;
@@ -538,6 +590,8 @@
                 return day;
             });
             await updateItinerary(newItinerary);
+            // Hide edit UI
+            toggleDayHeaderEdit(dayIndex, null, false);
         }
 
         function editDailyItem(dayIndex, itemId) {
@@ -589,7 +643,6 @@
                 if (index === dayIndex) {
                     const newItems = day.items.map(item => {
                         if (item.id === itemId) {
-                            // NEW: Update data but preserve original creator
                             return { ...item, time: newTime, text: newText, updatedBy: userDisplayName };
                         }
                         return item;
@@ -621,7 +674,7 @@
                 id: `item${Date.now()}`,
                 time: time,
                 text: text,
-                createdBy: userDisplayName // NEW: Add creator's name
+                createdBy: userDisplayName 
             };
 
             const newItinerary = appData.dailyItinerary.map((day, index) => {
@@ -656,7 +709,7 @@
             const newDay = {
                 day: `วันที่ ${newDayNum} (ระบุวันที่)`,
                 items: [],
-                createdBy: userDisplayName // NEW: Add creator's name
+                createdBy: userDisplayName 
             };
             
             try {
@@ -702,7 +755,7 @@
                     name: name,
                     amount: amount,
                     currency: "THB",
-                    createdBy: userDisplayName // NEW: Add creator's name
+                    createdBy: userDisplayName 
                 };
                 try {
                     const docRef = doc(db, "tripPlans", tripDocId);
@@ -724,7 +777,7 @@
                     id: `chk${Date.now()}`,
                     name: name,
                     done: false,
-                    createdBy: userDisplayName // NEW: Add creator's name
+                    createdBy: userDisplayName 
                 };
                 try {
                     const docRef = doc(db, "tripPlans", tripDocId);
@@ -768,7 +821,7 @@
                     name: name,
                     mapLink: mapLink,
                     notes: notes,
-                    createdBy: userDisplayName // NEW: Add creator's name
+                    createdBy: userDisplayName 
                 };
                 try {
                     const docRef = doc(db, "tripPlans", tripDocId);
@@ -797,8 +850,8 @@
 
         // --- Expose functions to global scope for inline onclick ---
         window.app = {
-            signInWithGoogle, // NEW
-            signOutApp,       // NEW
+            signInWithGoogle, 
+            signOutApp,       
             addDailyItem,
             removeDailyItem,
             addDay,
@@ -808,6 +861,7 @@
             toggleChecklistItem,
             addPOI,
             removePOI,
+            toggleDayHeaderEdit, // NEW
             updateDayHeader, 
             editDailyItem,   
             updateDailyItem, 
@@ -822,8 +876,16 @@
 
 <body class="bg-gray-100 font-sans">
     
-    <!-- NEW: Login Screen -->
-    <div id="login-screen" class="container mx-auto p-8 max-w-md mt-20 bg-white shadow-lg rounded-lg text-center">
+    <!-- NEW: Loading Screen (Visible by default) -->
+    <div id="loading-screen" class="flex items-center justify-center min-h-screen">
+        <div class="flex flex-col items-center">
+            <div class="loader"></div>
+            <p class="text-gray-600 mt-4">กำลังโหลดแผนการเดินทาง...</p>
+        </div>
+    </div>
+
+    <!-- NEW: Login Screen (Hidden by default) -->
+    <div id="login-screen" class="hidden container mx-auto p-8 max-w-md mt-20 bg-white shadow-lg rounded-lg text-center">
         <h1 class="text-3xl font-bold text-gray-900 mb-4">Bear Cat In FOK 2025</h1>
         <p class="text-gray-600 mb-6">กรุณาล็อกอินเพื่อเข้าใช้งานแผนการเดินทาง</p>
         <button onclick="window.app.signInWithGoogle()"
@@ -836,16 +898,16 @@
     <!-- Main Application (Hidden by default) -->
     <div id="main-app" class="hidden container mx-auto p-4 md:p-8 max-w-7xl">
 
-        <!-- Header -->
-        <header class="mb-6 flex justify-between items-center">
+        <!-- NEW: Modified Header for Mobile -->
+        <header class="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
             <div>
                 <h1 class="text-4xl font-bold text-gray-900">Bear Cat In FOK 2025</h1>
                 <p class="text-lg text-gray-600">ทริปญี่ปุ่น (Fukuoka → Osaka) 27 ธ.ค. 2568 - 3 ม.ค. 2569</p>
             </div>
-            <div class="text-right">
-                <span id="user-display" class="text-gray-700"></span>
+            <div class="text-center md:text-right">
+                <span id="user-display" class="text-gray-700 block mb-2 md:mb-0 md:inline"></span>
                 <button id="logout-button" onclick="window.app.signOutApp()"
-                    class="ml-4 px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 text-sm">
+                    class="ml-0 md:ml-4 px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 text-sm">
                     Logout
                 </button>
             </div>
