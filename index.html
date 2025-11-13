@@ -458,9 +458,14 @@
                     <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md group">
                         <div class="flex items-center flex-grow mr-2">
                             <span class="${isDone ? 'text-gray-500 line-through' : 'text-gray-800'}">${item.name}</span>
-                            <!-- Edit Button Added -->
+                            
+                            <!-- **** FIX: Grouped Edit/Delete buttons **** -->
                             <button onclick="window.app.editChecklistItem('${item.id}')" 
                                 class="ml-2 text-xs text-blue-500 opacity-0 group-hover:opacity-100 hover:underline">แก้ไข</button>
+                            <button onclick="window.app.removeChecklistItem('${item.id}')" 
+                                class="ml-1 text-xs text-red-500 opacity-0 group-hover:opacity-100 hover:underline">ลบ</button>
+                            <!-- **** END FIX **** -->
+
                             ${createdByHtml}
                         </div>
                         <div class="flex-shrink-0">
@@ -472,9 +477,7 @@
                                     }">
                                 ${isDone ? 'ยังไม่ทำ' : 'ทำแล้ว'}
                             </button>
-                            <!-- Simple Delete Button -->
-                            <button onclick="window.app.removeChecklistItem('${item.id}')" 
-                                class="ml-1 text-xs text-red-500 opacity-0 group-hover:opacity-100 hover:underline">ลบ</button>
+                            <!-- Delete Button was moved -->
                         </div>
                     </li>
                 `;
@@ -489,7 +492,7 @@
             if (!list || !total || !noExpenses) return;
 
             list.innerHTML = '';
-            noExpenses.classList.toggle('hidden', expenses.length > 0);
+            noExpenses.classList.toggle('hidden', (expenses || []).length > 0);
 
             let sum = 0;
             (expenses || []).forEach(exp => {
