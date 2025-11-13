@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;700&display=swap"
         rel="stylesheet">
     <style>
-        /* (CSS Styles remain the same as the previous file) */
+        /* (CSS Styles remain the same) */
         details[open] summary {
             font-weight: 600;
         }
@@ -48,8 +48,10 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import {
             getAuth,
-            signInAnonymously,
-            onAuthStateChanged
+            onAuthStateChanged,
+            GoogleAuthProvider, // Import Google Auth
+            signInWithPopup,    // Import Popup sign-in
+            signOut             // Import Sign out
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import {
             getFirestore,
@@ -65,18 +67,13 @@
 
         // --- Global Variables ---
         let app, db, auth;
-        let userId;
-        // นี่คือ ID ของเอกสารแผนการเดินทางที่ใช้ร่วมกัน
+        let userId, userDisplayName; // Store user's name
         const tripDocId = "mhee-maew-trip-2025"; 
         let appData = null; 
         let unsubscribeTrip = null; 
 
         // -----------------------------------------------------------------
-        // TODO: วาง FIREBASE CONFIG ที่คุณคัดลอกมาลงที่นี่
-        // 1. ไปที่ console.firebase.google.com สร้างโปรเจกต์
-        // 2. เพิ่ม Web App (</>)
-        // 3. คัดลอกค่า config มาวางแทนที่ส่วนนี้
-        
+        // FIREBASE CONFIG (จากที่คุณได้มา)
         const firebaseConfig = {
           apiKey: "AIzaSyDzYQTm0V6yBcOCyBGJxD65AoGRHKEOZng",
           authDomain: "bear-cat-in-fok-2025.firebaseapp.com",
@@ -88,8 +85,7 @@
         };
         // -----------------------------------------------------------------
 
-
-        // --- Tailwind Configuration ---
+        // (Tailwind Config remains the same)
         tailwind.config = {
             theme: {
                 extend: {
@@ -100,7 +96,7 @@
             },
         };
 
-        // --- Error Display ---
+        // (displayError function remains the same)
         function displayError(message, error) {
             const errorElement = document.getElementById('error-message');
             if (errorElement) {
@@ -112,36 +108,73 @@
 
         // --- Firebase Initialization and Auth ---
         async function initFirebaseAndAuth() {
-            // *** หากยังไม่ได้ใส่ firebaseConfig จะแจ้งเตือน ***
-            if (typeof firebaseConfig === 'undefined') {
-                displayError("ยังไม่ได้ตั้งค่า Firebase", "กรุณาแก้ไขไฟล์ HTML และใส่ 'firebaseConfig' ของคุณ (ดูคู่มือ 'deployment_guide.md')");
-                return;
-            }
-            
             try {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 setLogLevel('Debug');
 
+                // NEW AUTH LOGIC
                 onAuthStateChanged(auth, async (user) => {
+                    const mainApp = document.getElementById('main-app');
+                    const loginScreen = document.getElementById('login-screen');
+                    const userDisplay = document.getElementById('user-display');
+                    const logoutButton = document.getElementById('logout-button');
+
                     if (user) {
+                        // User is signed in
                         userId = user.uid;
+                        userDisplayName = user.displayName || user.email; // Get user's name
+
+                        // Show app, hide login
+                        mainApp.classList.remove('hidden');
+                        loginScreen.classList.add('hidden');
+                        userDisplay.textContent = `สวัสดี, ${userDisplayName}`;
+                        logoutButton.classList.remove('hidden');
+
                         await loadDataAndRender();
                     } else {
-                        // ลงชื่อเข้าใช้แบบไม่ระบุตัวตนโดยอัตโนมัติ
-                        await signInAnonymously(auth);
+                        // User is signed out
+                        userId = null;
+                        userDisplayName = null;
+                        if (unsubscribeTrip) unsubscribeTrip(); // Stop listening to data
+
+                        // Show login, hide app
+                        mainApp.classList.add('hidden');
+                        loginScreen.classList.remove('hidden');
+                        userDisplay.textContent = '';
+                        logoutButton.classList.add('hidden');
                     }
                 });
             } catch (error) {
                 displayError("ไม่สามารถเริ่มต้น Firebase ได้", error);
             }
         }
+        
+        // --- NEW Google Login/Logout Functions ---
+        async function signInWithGoogle() {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+                // onAuthStateChanged will handle the rest
+            } catch (error) {
+                displayError("ไม่สามารถล็อกอินด้วย Google ได้", error);
+            }
+        }
+
+        async function signOutApp() {
+            try {
+                await signOut(auth);
+                // onAuthStateChanged will handle the rest
+            } catch (error) {
+                displayError("ไม่สามารถล็อกเอาต์ได้", error);
+            }
+        }
 
         // --- Data Loading and Rendering ---
+        // (loadDataAndRender and initializeDocument remain mostly the same)
         async function loadDataAndRender() {
             if (!db || !tripDocId) return;
-            // *** แก้ไขเส้นทาง (Path) ให้อ่านจาก Root Collection ***
             const docRef = doc(db, "tripPlans", tripDocId);
 
             try {
@@ -166,9 +199,8 @@
             }
         }
 
-        // --- Initial Document Data ---
+        // (initializeDocument remains the same)
         async function initializeDocument(docRef) {
-             // ข้อมูลเริ่มต้นจะเหมือนกับในไฟล์ travel_planner.html
             const initialData = {
                 flightInfo: [
                     {
@@ -204,60 +236,61 @@
                     }
                 ],
                 dailyItinerary: [
-                    { day: "วันที่ 1 (27 ธ.ค.): Fukuoka", items: [{ id: `item${Date.now()}`, time: "15:00", text: "Check-in ที่พัก (Phoenix inn)"}] },
+                    { day: "วันที่ 1 (27 ธ.ค.): Fukuoka", items: [{ id: `item${Date.now()}`, time: "15:00", text: "Check-in ที่พัก (Phoenix inn)", createdBy: "System"}] },
                     { day: "วันที่ 2 (28 ธ.ค.): Fukuoka", items: [] },
                     { day: "วันที่ 3 (29 ธ.ค.): Fukuoka", items: [] },
-                    { day: "วันที่ 4 (30 ธ.ค.): Travel to Osaka", items: [{ id: `item${Date.now()+1}`, time: "15:00", text: "Check-in ที่พัก (Tennoji 204)"}] },
+                    { day: "วันที่ 4 (30 ธ.ค.): Travel to Osaka", items: [{ id: `item${Date.now()+1}`, time: "15:00", text: "Check-in ที่พัก (Tennoji 204)", createdBy: "System"}] },
                     { day: "วันที่ 5 (31 ธ.ค.): Osaka", items: [] },
                     { day: "วันที่ 6 (1 ม.ค.): Osaka/Kyoto", items: [] },
                     { day: "วันที่ 7 (2 ม.ค.): Osaka", items: [] },
                     { day: "วันที่ 8 (3 ม.ค.): Travel Back", items: [] }
                 ],
                 expenses: [
-                    { id: "exp1", name: "ที่พัก Fukuoka (Airbnb)", amount: 4553.31, currency: "THB" },
-                    { id: "exp2", name: "ที่พัก Osaka (Airbnb)", amount: 5190.00, currency: "THB" },
-                    { id: "exp3", name: "ค่าจองที่นั่ง XJ613 (2 คน)", amount: 1240.00, currency: "THB" }
+                    { id: "exp1", name: "ที่พัก Fukuoka (Airbnb)", amount: 4553.31, currency: "THB", createdBy: "System" },
+                    { id: "exp2", name: "ที่พัก Osaka (Airbnb)", amount: 5190.00, currency: "THB", createdBy: "System" },
+                    { id: "exp3", name: "ค่าจองที่นั่ง XJ613 (2 คน)", amount: 1240.00, currency: "THB", createdBy: "System" }
                 ],
                 checklist: [
-                    { id: "chk1", name: "จองที่พัก Fukuoka", done: true },
-                    { id: "chk2", name: "จองที่พัก Osaka", done: true },
-                    { id: "chk3", name: "จองตั๋วเครื่องบิน", done: true },
-                    { id: "chk4", name: "จอง JR Pass", done: false },
-                    { id: "chk5", name: "แลกเงินเยน", done: false }
+                    { id: "chk1", name: "จองที่พัก Fukuoka", done: true, createdBy: "System" },
+                    { id: "chk2", name: "จองที่พัก Osaka", done: true, createdBy: "System" },
+                    { id: "chk3", name: "จองตั๋วเครื่องบิน", done: true, createdBy: "System" },
+                    { id: "chk4", name: "จอง JR Pass", done: false, createdBy: "System" },
+                    { id: "chk5", name: "แลกเงินเยน", done: false, createdBy: "System" }
                 ],
                 poiCatalog: [
-                    { id: "poi1", name: "Shisui Premium Outlets", mapLink: "https://maps.app.goo.gl/SGofBWH22DN7YC25A", notes: "Outlet ใกล้สนามบิน (เผื่อแวะ)" },
-                    { id: "poi2", name: "วัดคินคะคุจิ (Kinkaku-ji)", mapLink: "https://maps.app.goo.gl/5fSj1fJ7kL7xG7Yq8", notes: "วัดทอง" },
-                    { id: "poi3", name: "Canal City Hakata", mapLink: "https://maps.app.goo.gl/95a3pGfYx6Yg9GgUA", notes: "ห้างใหญ่ แหล่งช้อปปิ้ง" },
-                    { id: "poi4", name: "Dotonbori Glico Sign", mapLink: "https://maps.app.goo.gl/iG3fE6fUqjYmCg9HA", notes: "ป้ายกูลิโกะ" },
-                    { id: "poi101", name: "Higashi Park (สวนฮิงาชิ)", mapLink: "https://maps.google.com/maps/contrib/101681164755352778011", notes: "สวนสาธารณะ" },
-                    { id: "poi102", name: "Hakata Ramen Hakataya Kawabata", mapLink: "https://maps.app.goo.gl/ToNCwiT359YPM1Ha7", notes: "ราเม็ง" },
-                    { id: "poi103", name: "LaLaport Kadoma / Mitsui Outlet", mapLink: "https://maps.app.goo.gl/9gCXN11f9NqYd3Wn8", notes: "Outlet โอซาก้า" },
-                    { id: "poi104", name: "Yanagibashi Rengo Market", mapLink: "https://maps.google.com/maps/contrib/113106483043824772363", notes: "ตลาดรวมยานางิบาชิ" },
-                    { id: "poi105", name: "Osaka City Hall", mapLink: "https://maps.app.goo.gl/z28nQkGhsK6kGkST9", notes: "ศาลาว่าการโอซาก้า" },
-                    { id: "poi106", name: "JACK IN THE DONUTS 福岡天神店", mapLink: "https://maps.app.goo.gl/E4L9vGj9gqR7b5XcA", notes: "โดนัท" },
-                    { id: "poi107", name: "Divine Bull Statue", mapLink: "https://maps.google.com/maps/contrib/103125462168316429196", notes: "รูปปั้นวัวศักดิ์สิทธิ์" },
-                    { id: "poi108", name: "Osaka Kizu Wholesale Market", mapLink: "https://maps.app.goo.gl/P2xV5eGjKqTfR9X9A", notes: "ตลาดปลาโอซาก้า" },
-                    { id: "poi109", name: "หอคอยแห่งดวงอาทิตย์ (Tower of the Sun)", mapLink: "https://maps.app.goo.gl/eB2qQfXnQdYg2xXp9", notes: "Expo '70 Commemorative Park" },
-                    { id: "poi110", name: "วัดนันโซอิน (Nanzoin Temple)", mapLink: "https://maps.google.com/maps/contrib/112916389657720548066", notes: "พระนอนใหญ่" },
-                    { id: "poi111", name: "LaLa Port Fukuoka (กันดั้ม)", mapLink: "https://maps.app.goo.gl/tBqXbL9q5YqJ3H8v9", notes: "ห้างกันดั้ม" },
-                    { id: "poi112", name: "ฟูกูโอกะทาวเวอร์ (Fukuoka Tower)", mapLink: "https://maps.app.goo.gl/mZq3fBv6jYx9b6xK8", notes: "จุดชมวิว" },
-                    { id: "poi113", name: "Mt.Sarakura Sky Dome", mapLink: "https://maps.google.com/maps/contrib/109812723375297914686", notes: "จุดชมวิวกลางคืน คิตะคิวชู" },
-                    { id: "poi114", name: "Wakato Bridge", mapLink: "https://maps.app.goo.gl/aC2uYn5h9wQ6eGz8A", notes: "สะพานแขวน คิตะคิวชู" },
-                    { id: "poi115", name: "Ainoshima Island (เกาะแมว)", mapLink: "https://maps.app.goo.gl/uXj9xH8tYyYqP6fA7", notes: "เกาะแมว" },
-                    { id: "poi116", name: "ศาลเจ้ามิยาจิดาเกะ", mapLink: "https://maps.google.com/maps/contrib/101559216444717905389", notes: "ศาลเจ้า" },
-                    { id: "poi117", name: "อนุสรณ์สันติภาพฮิโระชิมะ (Peace Memorial)", mapLink: "https://maps.app.goo.gl/tFqE6r3jS6mYm9pJA", notes: "ฮิโรชิมะ" },
-                    { id: "poi118", name: "Miyajima Ferry Terminal", mapLink: "https://maps.app.goo.gl/Wq4eYfWbCjD9gYxJ9", notes: "ท่าเรือไปเกาะมิยาจิมะ" },
-                    { id: "poi119", name: "Hypocenter Park", mapLink: "https://maps.google.com/maps/contrib/115916215146949409617", notes: "สวนสันติภาพนางาซากิ" },
-                    { id: "poi120", name: "Kumamon Port Yatsushiro", mapLink: "https://maps.app.goo.gl/yYv3fM4p8qG7z6qF9", notes: "ท่าเรือคุมะมง" },
-                    { id: "poi121", name: "Kia Ora Budget Stay", mapLink: "https://maps.app.goo.gl/FkG7cZ7gJqR9xQyP7", notes: "ที่พัก (ตัวเลือก?)" }
+                    // (All POI data remains the same)
+                    { id: "poi1", name: "Shisui Premium Outlets", mapLink: "https://maps.app.goo.gl/SGofBWH22DN7YC25A", notes: "Outlet ใกล้สนามบิน (เผื่อแวะ)", createdBy: "System" },
+                    { id: "poi2", name: "วัดคินคะคุจิ (Kinkaku-ji)", mapLink: "https://maps.app.goo.gl/5fSj1fJ7kL7xG7Yq8", notes: "วัดทอง", createdBy: "System" },
+                    { id: "poi3", name: "Canal City Hakata", mapLink: "https://maps.app.goo.gl/95a3pGfYx6Yg9GgUA", notes: "ห้างใหญ่ แหล่งช้อปปิ้ง", createdBy: "System" },
+                    { id: "poi4", name: "Dotonbori Glico Sign", mapLink: "https://maps.app.goo.gl/iG3fE6fUqjYmCg9HA", notes: "ป้ายกูลิโกะ", createdBy: "System" },
+                    { id: "poi101", name: "Higashi Park (สวนฮิงาชิ)", mapLink: "https://maps.google.com/maps/contrib/101681164755352778011", notes: "สวนสาธารณะ", createdBy: "System" },
+                    { id: "poi102", name: "Hakata Ramen Hakataya Kawabata", mapLink: "https://maps.app.goo.gl/ToNCwiT359YPM1Ha7", notes: "ราเม็ง", createdBy: "System" },
+                    { id: "poi103", name: "LaLaport Kadoma / Mitsui Outlet", mapLink: "https://maps.app.goo.gl/9gCXN11f9NqYd3Wn8", notes: "Outlet โอซาก้า", createdBy: "System" },
+                    { id: "poi104", name: "Yanagibashi Rengo Market", mapLink: "https://maps.google.com/maps/contrib/113106483043824772363", notes: "ตลาดรวมยานางิบาชิ", createdBy: "System" },
+                    { id: "poi105", name: "Osaka City Hall", mapLink: "https://maps.app.goo.gl/z28nQkGhsK6kGkST9", notes: "ศาลาว่าการโอซาก้า", createdBy: "System" },
+                    { id: "poi106", name: "JACK IN THE DONUTS 福岡天神店", mapLink: "https://maps.app.goo.gl/E4L9vGj9gqR7b5XcA", notes: "โดนัท", createdBy: "System" },
+                    { id: "poi107", name: "Divine Bull Statue", mapLink: "https://maps.google.com/maps/contrib/103125462168316429196", notes: "รูปปั้นวัวศักดิ์สิทธิ์", createdBy: "System" },
+                    { id: "poi108", name: "Osaka Kizu Wholesale Market", mapLink: "https://maps.app.goo.gl/P2xV5eGjKqTfR9X9A", notes: "ตลาดปลาโอซาก้า", createdBy: "System" },
+                    { id: "poi109", name: "หอคอยแห่งดวงอาทิตย์ (Tower of the Sun)", mapLink: "https://maps.app.goo.gl/eB2qQfXnQdYg2xXp9", notes: "Expo '70 Commemorative Park", createdBy: "System" },
+                    { id: "poi110", name: "วัดนันโซอิน (Nanzoin Temple)", mapLink: "https://maps.google.com/maps/contrib/112916389657720548066", notes: "พระนอนใหญ่", createdBy: "System" },
+                    { id: "poi111", name: "LaLa Port Fukuoka (กันดั้ม)", mapLink: "https://maps.app.goo.gl/tBqXbL9q5YqJ3H8v9", notes: "ห้างกันดั้ม", createdBy: "System" },
+                    { id: "poi112", name: "ฟูกูโอกะทาวเวอร์ (Fukuoka Tower)", mapLink: "https://maps.app.goo.gl/mZq3fBv6jYx9b6xK8", notes: "จุดชมวิว", createdBy: "System" },
+                    { id: "poi113", name: "Mt.Sarakura Sky Dome", mapLink: "https://maps.google.com/maps/contrib/109812723375297914686", notes: "จุดชมวิวกลางคืน คิตะคิวชู", createdBy: "System" },
+                    { id: "poi114", name: "Wakato Bridge", mapLink: "https://maps.app.goo.gl/aC2uYn5h9wQ6eGz8A", notes: "สะพานแขวน คิตะคิวชู", createdBy: "System" },
+                    { id: "poi115", name: "Ainoshima Island (เกาะแมว)", mapLink: "https://maps.app.goo.gl/uXj9xH8tYyYqP6fA7", notes: "เกาะแมว", createdBy: "System" },
+                    { id: "poi116", name: "ศาลเจ้ามิยาจิดาเกะ", mapLink: "https://maps.google.com/maps/contrib/101559216444717905389", notes: "ศาลเจ้า", createdBy: "System" },
+                    { id: "poi117", name: "อนุสรณ์สันติภาพฮิโระชิมะ (Peace Memorial)", mapLink: "https://maps.app.goo.gl/tFqE6r3jS6mYm9pJA", notes: "ฮิโรชิมะ", createdBy: "System" },
+                    { id: "poi118", name: "Miyajima Ferry Terminal", mapLink: "https://maps.app.goo.gl/Wq4eYfWbCjD9gYxJ9", notes: "ท่าเรือไปเกาะมิยาจิมะ", createdBy: "System" },
+                    { id: "poi119", name: "Hypocenter Park", mapLink: "https://maps.google.com/maps/contrib/115916215146949409617", notes: "สวนสันติภาพนางาซากิ", createdBy: "System" },
+                    { id: "poi120", name: "Kumamon Port Yatsushiro", mapLink: "https://maps.app.goo.gl/yYv3fM4p8qG7z6qF9", notes: "ท่าเรือคุมะมง", createdBy: "System" },
+                    { id: "poi121", name: "Kia Ora Budget Stay", mapLink: "https://maps.app.goo.gl/FkG7cZ7gJqR9xQyP7", notes: "ที่พัก (ตัวเลือก?)", createdBy: "System" }
                 ]
             };
             await setDoc(docRef, initialData);
         }
         
         // --- Main UI Rendering Functions ---
-        // (All render functions are identical to the previous file)
+        // (renderUI, renderFlights, renderAccommodations remain the same)
         
         function renderUI(data) {
             if (!data) return;
@@ -309,24 +342,31 @@
             if (!container) return;
             
             container.innerHTML = itinerary.map((dayItem, index) => {
-                const timelineHtml = (dayItem.items || []).sort((a, b) => a.time.localeCompare(b.time)).map(item => `
+                const timelineHtml = (dayItem.items || []).sort((a, b) => a.time.localeCompare(b.time)).map(item => {
+                    // NEW: Show who created the item
+                    const createdByHtml = item.createdBy 
+                        ? `<p class="text-xs text-gray-400 italic mt-1">บันทึกโดย: ${item.createdBy.split(' ')[0]}</p>` 
+                        : '';
+
+                    return `
                     <div class="timeline-item pb-4">
-                                <div class="timeline-dot"></div>
-                                <div class="flex justify-between items-start">
-                                <div>
-                                    <span class="font-semibold text-gray-800">${item.time}</span>
-                                    <p class="text-gray-700">${item.text.replace(/\n/g, '<br>')}</p>
-                                </div>
-                                <div class="flex-shrink-0 ml-2">
-                                    <button onclick="window.app.editDailyItem(${index}, '${item.id}')"
-                                        class="text-blue-500 hover:text-blue-700 text-sm font-medium">แก้ไข</button>
-                                    <button onclick="window.app.removeDailyItem(${index}, '${item.id}')" 
-                                        class="text-red-500 hover:text-red-700 text-sm font-medium ml-2">ลบ</button>
-                                </div>
+                        <div class="timeline-dot"></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="font-semibold text-gray-800">${item.time}</span>
+                                <p class="text-gray-700">${item.text.replace(/\n/g, '<br>')}</p>
+                                ${createdByHtml} 
+                            </div>
+                            <div class="flex-shrink-0 ml-2">
+                                <button onclick="window.app.editDailyItem(${index}, '${item.id}')"
+                                    class="text-blue-500 hover:text-blue-700 text-sm font-medium">แก้ไข</button>
+                                <button onclick="window.app.removeDailyItem(${index}, '${item.id}')" 
+                                    class="text-red-500 hover:text-red-700 text-sm font-medium ml-2">ลบ</button>
                             </div>
                         </div>
                     </div>
-                `).join('');
+                    `;
+                }).join('');
 
                 const poiOptions = poiCatalog.map(poi => 
                     `<option value="${poi.id}">${poi.name}</option>`
@@ -389,11 +429,19 @@
 
             sortedList.forEach(item => {
                 const isDone = item.done;
+                // NEW: Show creator
+                const createdByHtml = item.createdBy 
+                        ? `<span class="text-xs text-gray-400 italic ml-2">(โดย: ${item.createdBy.split(' ')[0]})</span>` 
+                        : '';
+
                 list.innerHTML += `
                     <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
-                        <span class="${isDone ? 'text-gray-500' : 'text-gray-800'}">${item.name}</span>
+                        <div class="flex items-center">
+                            <span class="${isDone ? 'text-gray-500' : 'text-gray-800'}">${item.name}</span>
+                            ${createdByHtml}
+                        </div>
                         <button onclick="window.app.toggleChecklistItem('${item.id}', ${!isDone})" 
-                                class="px-2 py-1 text-sm text-white rounded-md 
+                                class="px-2 py-1 text-sm text-white rounded-md flex-shrink-0
                                 ${isDone 
                                     ? 'bg-gray-500 hover:bg-gray-600'
                                     : 'bg-green-500 hover:bg-green-600'
@@ -416,10 +464,18 @@
 
             let sum = 0;
             expenses.forEach(exp => {
+                // NEW: Show creator
+                const createdByHtml = exp.createdBy 
+                        ? `<span class="text-xs text-gray-400 italic block"> (โดย: ${exp.createdBy.split(' ')[0]})</span>` 
+                        : '';
+                
                 list.innerHTML += `
                     <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
-                        <span>${exp.name}</span>
-                        <span class="${exp.amount >= 0 ? 'text-gray-700' : 'text-red-600'} font-medium">
+                        <div>
+                            <span>${exp.name}</span>
+                            ${createdByHtml}
+                        </div>
+                        <span class="${exp.amount >= 0 ? 'text-gray-700' : 'text-red-600'} font-medium text-right">
                             ${exp.amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })} ${exp.currency}
                         </span>
                     </li>
@@ -437,6 +493,10 @@
                 const notesHtml = poi.notes 
                     ? `<p class="text-sm text-gray-600 mt-1"><em>โน้ต: ${poi.notes}</em></p>` 
                     : '';
+                // NEW: Show creator
+                const createdByHtml = poi.createdBy 
+                        ? `<p class="text-xs text-gray-400 italic mt-1">(โดย: ${poi.createdBy.split(' ')[0]})</p>` 
+                        : '';
 
                 list.innerHTML += `
                     <li class="p-2 border-b border-gray-200">
@@ -445,6 +505,7 @@
                             <a href="${poi.mapLink}" target="_blank" class="text-blue-600 hover:underline text-sm">แผนที่</a>
                         </div>
                         ${notesHtml}
+                        ${createdByHtml}
                         <button onclick="window.app.removePOI('${poi.id}')" class="mt-1 text-xs text-red-500 hover:underline">ลบ</button>
                     </li>
                 `;
@@ -455,7 +516,6 @@
 
         async function updateItinerary(newItinerary) {
             try {
-                // *** อัปเดตเส้นทาง (Path) ให้ตรงกับตอนโหลด ***
                 const docRef = doc(db, "tripPlans", tripDocId);
                 await updateDoc(docRef, { dailyItinerary: newItinerary });
             } catch (error) {
@@ -529,7 +589,8 @@
                 if (index === dayIndex) {
                     const newItems = day.items.map(item => {
                         if (item.id === itemId) {
-                            return { ...item, time: newTime, text: newText };
+                            // NEW: Update data but preserve original creator
+                            return { ...item, time: newTime, text: newText, updatedBy: userDisplayName };
                         }
                         return item;
                     });
@@ -559,7 +620,8 @@
             const newItem = {
                 id: `item${Date.now()}`,
                 time: time,
-                text: text
+                text: text,
+                createdBy: userDisplayName // NEW: Add creator's name
             };
 
             const newItinerary = appData.dailyItinerary.map((day, index) => {
@@ -593,7 +655,8 @@
             const newDayNum = appData.dailyItinerary.length + 1;
             const newDay = {
                 day: `วันที่ ${newDayNum} (ระบุวันที่)`,
-                items: []
+                items: [],
+                createdBy: userDisplayName // NEW: Add creator's name
             };
             
             try {
@@ -638,7 +701,8 @@
                     id: `exp${Date.now()}`,
                     name: name,
                     amount: amount,
-                    currency: "THB"
+                    currency: "THB",
+                    createdBy: userDisplayName // NEW: Add creator's name
                 };
                 try {
                     const docRef = doc(db, "tripPlans", tripDocId);
@@ -659,7 +723,8 @@
                 const newItem = {
                     id: `chk${Date.now()}`,
                     name: name,
-                    done: false
+                    done: false,
+                    createdBy: userDisplayName // NEW: Add creator's name
                 };
                 try {
                     const docRef = doc(db, "tripPlans", tripDocId);
@@ -702,7 +767,8 @@
                     id: `poi${Date.now()}`,
                     name: name,
                     mapLink: mapLink,
-                    notes: notes 
+                    notes: notes,
+                    createdBy: userDisplayName // NEW: Add creator's name
                 };
                 try {
                     const docRef = doc(db, "tripPlans", tripDocId);
@@ -731,6 +797,8 @@
 
         // --- Expose functions to global scope for inline onclick ---
         window.app = {
+            signInWithGoogle, // NEW
+            signOutApp,       // NEW
             addDailyItem,
             removeDailyItem,
             addDay,
@@ -753,12 +821,34 @@
 </head>
 
 <body class="bg-gray-100 font-sans">
-    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+    
+    <!-- NEW: Login Screen -->
+    <div id="login-screen" class="container mx-auto p-8 max-w-md mt-20 bg-white shadow-lg rounded-lg text-center">
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">Bear Cat In FOK 2025</h1>
+        <p class="text-gray-600 mb-6">กรุณาล็อกอินเพื่อเข้าใช้งานแผนการเดินทาง</p>
+        <button onclick="window.app.signInWithGoogle()"
+            class="w-full px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039L38.485 13.85C34.609 10.323 29.723 8 24 8 12.954 8 4 16.954 4 28s8.954 20 20 20 20-8.954 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691c2.007-4.103 5.703-7.141 10.08-8.974L11.707 10.2C8.618 11.66 6.814 13.06 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-5.02-4.99C30.05 36.1 27.208 38 24 38c-3.882 0-7.23-2.023-9.117-5.034l-5.51 4.83C11.65 41.59 17.51 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.103 4.148-3.94 5.574l5.02 4.99C41.87 35.19 44 30.65 44 26c0-1.341-.138-2.65-.389-3.917z"/></svg>
+            Sign in with Google
+        </button>
+    </div>
+
+    <!-- Main Application (Hidden by default) -->
+    <div id="main-app" class="hidden container mx-auto p-4 md:p-8 max-w-7xl">
 
         <!-- Header -->
-        <header class="mb-6">
-            <h1 class="text-4xl font-bold text-gray-900">Bear Cat In FOK 2025</h1>
-            <p class="text-lg text-gray-600">ทริปญี่ปุ่น (Fukuoka → Osaka) 27 ธ.ค. 2568 - 3 ม.ค. 2569</p>
+        <header class="mb-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900">Bear Cat In FOK 2025</h1>
+                <p class="text-lg text-gray-600">ทริปญี่ปุ่น (Fukuoka → Osaka) 27 ธ.ค. 2568 - 3 ม.ค. 2569</p>
+            </div>
+            <div class="text-right">
+                <span id="user-display" class="text-gray-700"></span>
+                <button id="logout-button" onclick="window.app.signOutApp()"
+                    class="ml-4 px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 text-sm">
+                    Logout
+                </button>
+            </div>
         </header>
 
         <!-- Error Message Bar -->
