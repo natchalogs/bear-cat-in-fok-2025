@@ -1,9 +1,7 @@
-<!DOCTYPE html>
-<html lang="th">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- (v.7) Updated Title -->
     <title>Bear Cat In FOK 2025</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;700&display=swap"
@@ -50,6 +48,15 @@
             border-radius: 50%;
             width: 40px;
             height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        /* (v.7) Spinner for AI Button */
+        .btn-spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-left-color: #ffffff;
+            border-radius: 50%;
+            width: 1rem;
+            height: 1rem;
             animation: spin 1s linear infinite;
         }
         @keyframes spin {
@@ -103,6 +110,9 @@
             expenseId: null,
             poiId: null
         };
+        
+        // --- (v.7) Gemini API Configuration ---
+        const geminiApiKey = ""; // Provided by environment
 
         // -----------------------------------------------------------------
         // FIREBASE CONFIG
@@ -132,10 +142,16 @@
         function displayError(message, error) {
             const errorElement = document.getElementById('error-message');
             if (errorElement) {
-                errorElement.textContent = `เกิดข้อผิดพลาด: ${message}. รายละเอียด: ${error?.message || error}`;
-                errorElement.classList.remove('hidden');
+                if (message) {
+                    errorElement.textContent = `เกิดข้อผิดพลาด: ${message}. ${error ? (error.message || error) : ''}`;
+                    errorElement.classList.remove('hidden');
+                } else {
+                    errorElement.classList.add('hidden');
+                }
             }
-            console.error(message, error);
+            if (message || error) {
+                console.error(message, error || '');
+            }
         }
 
         // --- Firebase Initialization and Auth ---
@@ -235,14 +251,14 @@
                     {
                         title: "ขาไป (BKK → FUK)",
                         flights: [
-                            "26 ต.ค. 2568, 23:50 (BKK) → 27 ต.ค. 04:50 (MNL) | PR733 | ที่นั่ง 52J, 52K",
-                            "27 ต.ค. 2568, 10:00 (MNL) → 14:40 (FUK) | PR426 | ที่นั่ง 51A, 51B"
+                            "26 Oct 2025, 23:50 (BKK) → 27 Oct 04:50 (MNL) | PR733 | ที่นั่ง 52J, 52K",
+                            "27 Oct 2025, 10:00 (MNL) → 14:40 (FUK) | PR426 | ที่นั่ง 51A, 51B"
                         ]
                     },
                     {
                         title: "ขากลับ (KIX → DMK)",
                         flights: [
-                            "3 มี.ค. 2569, 09:55 (KIX) → 14:25 (DMK) | XJ613 | ที่นั่ง 42F, 42G"
+                            "3 Mar 2026, 09:55 (KIX) → 14:25 (DMK) | XJ613 | ที่นั่ง 42F, 42G"
                         ]
                     }
                 ],
@@ -250,7 +266,7 @@
                     // --- FIXED PERMANENT LINKS ---
                     {
                         name: "旧P203 Phoenix inn (Fukuoka)",
-                        dates: "27 ธ.ค. - 30 ธ.ค.",
+                        dates: "27 Dec - 30 Dec 2025",
                         address: "5-chōme-4-15 Katakasu, Hakata Ward",
                         mapLink: "https://www.google.com/maps/place/5-ch%C5%8Dme-4-15+Katakasu,+Hakata+Ward,+Fukuoka,+812-0043,+Japan", 
                         priceTHB: 4553.31,
@@ -258,7 +274,7 @@
                     },
                     {
                         name: "天王寺204 (Osaka)",
-                        dates: "30 ธ.ค. - 3 ม.ค.",
+                        dates: "30 Dec 2025 - 3 Jan 2026",
                         address: "南河堀町10-3, 大阪市天王寺区",
                         mapLink: "https://www.google.com/maps/place/10-3+Minamikawahorich%C5%8D,+Tenn%C5%8Dji+Ward,+Osaka,+543-0054,+Japan", 
                         priceTHB: 5190.00,
@@ -266,14 +282,14 @@
                     }
                 ],
                 dailyItinerary: [
-                    { day: "วันที่ 1 (27 ธ.ค.): Fukuoka", items: [{ id: `item${Date.now()}`, time: "15:00", text: "Check-in ที่พัก (Phoenix inn)"}] },
-                    { day: "วันที่ 2 (28 ธ.ค.): Fukuoka", items: [] },
-                    { day: "วันที่ 3 (29 ธ.ค.): Fukuoka", items: [] },
-                    { day: "วันที่ 4 (30 ธ.ค.): Travel to Osaka", items: [{ id: `item${Date.now()+1}`, time: "15:00", text: "Check-in ที่พัก (Tennoji 204)"}] },
-                    { day: "วันที่ 5 (31 ธ.ค.): Osaka", items: [] },
-                    { day: "วันที่ 6 (1 ม.ค.): Osaka/Kyoto", items: [] },
-                    { day: "วันที่ 7 (2 ม.ค.): Osaka", items: [] },
-                    { day: "วันที่ 8 (3 ม.ค.): Travel Back", items: [] }
+                    { day: "Day 1 (27 Dec 2025): Fukuoka", items: [{ id: `item${Date.now()}`, time: "15:00", text: "Check-in ที่พัก (Phoenix inn)"}] },
+                    { day: "Day 2 (28 Dec 2025): Fukuoka", items: [] },
+                    { day: "Day 3 (29 Dec 2025): Fukuoka", items: [] },
+                    { day: "Day 4 (30 Dec 2025): Travel to Osaka", items: [{ id: `item${Date.now()+1}`, time: "15:00", text: "Check-in ที่พัก (Tennoji 204)"}] },
+                    { day: "Day 5 (31 Dec 2025): Osaka", items: [] },
+                    { day: "Day 6 (1 Jan 2026): Osaka/Kyoto", items: [] },
+                    { day: "Day 7 (2 Jan 2026): Osaka", items: [] },
+                    { day: "Day 8 (3 Jan 2026): Travel Back", items: [] }
                 ],
                 expenses: [
                     { id: "exp1", name: "ที่พัก Fukuoka (Airbnb)", amount: 4553.31, currency: "THB" },
@@ -388,7 +404,7 @@
                 const isOpen = openStates[dayItem.day] !== undefined ? openStates[dayItem.day] : (index === 0);
 
                 return `
-                <details ${isOpen ? 'open' : ''} class="mb-2 bg-white shadow-sm rounded-lg overflow-hidden">
+                <details ${isOpen ? 'open' : ''} class="mb-2 bg-slate-50 shadow-sm rounded-lg overflow-hidden">
                     <summary class="font-semibold p-4 cursor-pointer hover:bg-slate-100 transition-colors flex justify-between items-center gap-2 border-b border-slate-200">
                         
                         <!-- Display Mode -->
@@ -411,7 +427,7 @@
                         </div>
 
                     </summary>
-                    <div class="p-4 border-t border-gray-200">
+                    <div class="p-4 border-t border-gray-200 bg-white">
                         <div class="mb-4">
                             ${timelineHtml || '<p class="text-gray-500 text-sm">ยังไม่มีกิจกรรมในวันนี้</p>'}
                         </div>
@@ -477,11 +493,11 @@
                 const isDone = item.done;
                 list.innerHTML += `
                     <li class="flex justify-between items-center p-2 hover:bg-slate-50 rounded-md group border-b border-gray-100">
-                        <div class="flex items-center flex-grow mr-2">
-                            <span class="${isDone ? 'text-gray-500' : 'text-gray-800'}">${item.name}</span>
+                        <div class="flex items-center flex-grow mr-2 min-w-0"> <!-- (v.7) Added min-w-0 for ellipsis -->
+                            <span class="${isDone ? 'text-gray-500' : 'text-gray-800'} truncate" title="${item.name}">${item.name}</span>
                             
                             <!-- (v.6) Edit/Delete buttons next to text, appear on hover -->
-                            <div class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                                 <button onclick="window.app.editChecklistItem('${item.id}')" 
                                     class="text-xs text-indigo-500 hover:underline">แก้ไข</button>
                                 <button onclick="window.app.removeChecklistItem('${item.id}')" 
@@ -520,10 +536,10 @@
             expenses.forEach(exp => {
                 list.innerHTML += `
                     <li class="flex justify-between items-center p-2 hover:bg-slate-50 rounded-md group border-b border-gray-100">
-                        <div>
+                        <div class="truncate" title="${exp.name}">
                             <span>${exp.name}</span>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-shrink-0">
                             <span class="${exp.amount >= 0 ? 'text-gray-700' : 'text-red-600'} font-medium text-right">
                                 ${exp.amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })} ${exp.currency}
                             </span>
@@ -631,7 +647,7 @@
             
             const [hour, minute] = item.time.split(':');
             document.getElementById(`item-hour-${dayIndex}`).value = hour;
-            document.getElementById(`item-minute-${dayIndex}`).value = minute;
+            document.getElementById(`item-minute-${dayIndex}`).value = minute || '00'; // Handle missing minute
             document.getElementById(`item-text-${dayIndex}`).value = item.text;
 
             document.getElementById(`add-item-btn-${dayIndex}`).classList.add('hidden');
@@ -964,7 +980,130 @@
             }
         }
 
-        // --- POI FUNCTIONS (v.5 - Edit/Cancel added, Auto-fill removed) ---
+        // --- (v.7) Gemini API Helper: fetchWithRetry ---
+        /**
+         * Fetches a URL with exponential backoff for retries.
+         * @param {string} url - The URL to fetch.
+         * @param {object} options - The options for the fetch request.
+         * @param {number} [retries=3] - The number of retries.
+         * @param {number} [delay=1000] - The initial delay in ms.
+         * @returns {Promise<Response>} The fetch response.
+         */
+        const fetchWithRetry = async (url, options, retries = 3, delay = 1000) => {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    // 429: Too Many Requests (rate limiting)
+                    // 5xx: Server errors
+                    if (response.ok) return response;
+                    if (response.status === 429 || response.status >= 500) {
+                        console.warn(`Attempt ${i + 1}/${retries}: Received status ${response.status}. Retrying in ${delay}ms...`);
+                        await new Promise(res => setTimeout(res, delay));
+                        delay *= 2; // Increase delay
+                    } else {
+                        // Don't retry for other client-side errors (e.g., 400, 403)
+                        return response;
+                    }
+                } catch (error) {
+                    // Network errors
+                    console.warn(`Attempt ${i + 1}/${retries}: Network error. Retrying in ${delay}ms...`, error);
+                    if (i === retries - 1) throw error; // Throw on last attempt
+                    await new Promise(res => setTimeout(res, delay));
+                    delay *= 2;
+                }
+            }
+            throw new Error('Failed to fetch after all retries.');
+        };
+        
+        // --- (v.7) POI FUNCTION: analyzeMapLink (NEW) ---
+        async function analyzeMapLink() {
+            const linkInput = document.getElementById('poi-link');
+            const url = linkInput.value.trim();
+            if (!url) {
+                displayError("กรุณาวางลิงก์ Google Maps ก่อนครับ", null);
+                return;
+            }
+            
+            displayError(null); // Clear previous errors
+            const aiButton = document.getElementById('ai-poi-btn');
+            const aiButtonText = document.getElementById('ai-poi-btn-text');
+            const aiButtonSpinner = document.getElementById('ai-poi-btn-spinner');
+
+            // --- Set Loading State ---
+            aiButton.disabled = true;
+            aiButtonText.classList.add('hidden');
+            aiButtonSpinner.classList.remove('hidden');
+
+            try {
+                const model = "gemini-2.5-flash-preview-09-2025";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
+
+                const systemPrompt = `คุณคือผู้ช่วยจัดการการเดินทาง หน้าที่ของคุณคือดึงข้อมูลสถานที่จากลิงก์ Google Maps ที่ให้มา และตอบกลับเป็น JSON ที่มีโครงสร้าง {"name": "ชื่อสถานที่", "notes": "คำอธิบายสั้นๆ เกี่ยวกับสถานที่ (เช่น 'ราเม็ง 24 ชม.' หรือ 'วัดดังในเกียวโต')"} เสมอ`;
+                const userQuery = `นี่คือลิงก์ Google Maps: ${url} กรุณาให้ข้อมูลสถานที่ตามที่ร้องขอ`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    tools: [{ "google_search": {} }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "name": { "type": "STRING" },
+                                "notes": { "type": "STRING" }
+                            }
+                        }
+                    }
+                };
+
+                const response = await fetchWithRetry(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    const errorMsg = errorBody?.error?.message || `HTTP error! status: ${response.status}`;
+                    throw new Error(errorMsg);
+                }
+                
+                const result = await response.json();
+
+                if (!result.candidates || !result.candidates[0].content || !result.candidates[0].content.parts[0].text) {
+                    throw new Error('Invalid response structure from AI.');
+                }
+                
+                const rawJson = result.candidates[0].content.parts[0].text;
+                const parsedData = JSON.parse(rawJson);
+
+                if (parsedData.name && parsedData.notes) {
+                    document.getElementById('poi-name').value = parsedData.name;
+                    document.getElementById('poi-notes').value = parsedData.notes;
+                    // Highlight fields
+                    document.getElementById('poi-name').classList.add('bg-green-100');
+                    document.getElementById('poi-notes').classList.add('bg-green-100');
+                    setTimeout(() => {
+                        document.getElementById('poi-name').classList.remove('bg-green-100');
+                        document.getElementById('poi-notes').classList.remove('bg-green-100');
+                    }, 1500);
+                } else {
+                    throw new Error('AI response did not contain name or notes.');
+                }
+
+            } catch (error) {
+                displayError("ไม่สามารถวิเคราะห์ลิงก์ได้", error);
+            } finally {
+                // --- Unset Loading State ---
+                aiButton.disabled = false;
+                aiButtonText.classList.remove('hidden');
+                aiButtonSpinner.classList.add('hidden');
+            }
+        }
+
+
+        // --- POI FUNCTIONS (v.7 - Gemini function attached) ---
         async function addPOI() {
             const nameInput = document.getElementById('poi-name');
             const linkInput = document.getElementById('poi-link');
@@ -1070,22 +1209,23 @@
             addPoiToText,
             addExpense,
             removeExpenseItem,
-            editExpenseItem, // Added v.5
-            cancelEditExpense, // Added v.5
+            editExpenseItem, 
+            cancelEditExpense, 
             addChecklistItem,
             toggleChecklistItem,
             removeChecklistItem,
-            editChecklistItem, // Added v.5
-            cancelEditChecklist, // Added v.5
+            editChecklistItem, 
+            cancelEditChecklist, 
             addPOI,
             removePOI,
-            editPOI, // Added v.5
-            cancelEditPOI, // Added v.5
+            editPOI, 
+            cancelEditPOI, 
             toggleDayHeaderEdit, 
             updateDayHeader, 
             editDailyItem,   
             updateDailyItem, 
             cancelEdit,
+            analyzeMapLink // (v.7) Added Gemini function
         };
 
         // --- Start Application ---
@@ -1107,7 +1247,7 @@
 
     <!-- Login Screen -->
     <div id="login-screen" class="hidden container mx-auto p-8 max-w-md mt-20 bg-white shadow-lg rounded-lg text-center">
-        <!-- (v.5) Image Removed -->
+        <!-- (v.6) Image Removed -->
         
         <h1 class="text-3xl font-bold text-gray-900 mb-4">Bear Cat In FOK 2025</h1>
         <p class="text-gray-600 mb-6">กรุณาล็อกอินเพื่อเข้าใช้งานแผนการเดินทาง</p>
@@ -1127,7 +1267,7 @@
                 <!-- (v.5) Header color changed -->
                 <h1 class="text-xl md:text-2xl font-bold text-indigo-700 leading-tight">Bear Cat In FOK 2025</h1>
                 <!-- Date on new line -->
-                <p class="text-xs md:text-sm text-gray-500 mt-1">ทริปญี่ปุ่น (Fukuoka → Osaka)<br class="md:hidden"> 27 ธ.ค. 2568 - 3 ม.ค. 2569</p>
+                <p class="text-xs md:text-sm text-gray-500 mt-1">ทริปญี่ปุ่น (Fukuoka → Osaka)<br class="md:hidden"> 27 Dec 2025 - 3 Jan 2026</p>
             </div>
             <!-- (v.4) Minimalist User/Logout Area -->
             <div class="flex items-center gap-2 mt-2 md:mt-0 self-end md:self-auto">
@@ -1155,7 +1295,7 @@
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
                     <!-- (v.5) Header color changed -->
                     <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">🗺️ แผนการเดินทางรายวัน</h2>
-                    <div id="daily-itinerary-container" class="p-5 space-y-2">
+                    <div id="daily-itinerary-container" class="p-5 space-y-2 bg-white">
                         <!-- Daily itinerary items will be rendered here -->
                     </div>
                     <div class="p-5 border-t border-gray-200">
@@ -1257,18 +1397,26 @@
                         <ul id="poi-list" class="space-y-3 mb-4 max-h-60 overflow-y-auto">
                             <!-- POI items here -->
                         </ul>
-                        <!-- (v.5) Edit/Cancel buttons, Auto-fill removed -->
+                        <!-- (v.7) Gemini AI Button Added -->
                         <div class="mt-4 space-y-2 border-t pt-4">
                             <h3 class="font-semibold">เพิ่ม/แก้ไข สถานที่</h3>
                             
-                            <input type="text" id="poi-name" placeholder="ชื่อสถานที่"
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
+                            <div class="space-y-2">
+                                <input type="text" id="poi-link" placeholder="ลิงก์ Google Maps (สั้นหรือยาวก็ได้)"
+                                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
+                                
+                                <button id="ai-poi-btn" onclick="window.app.analyzeMapLink()" 
+                                    class="w-full px-3 py-2 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md hover:bg-yellow-200 text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
+                                    <span id="ai-poi-btn-text">⚡ วิเคราะห์ลิงก์ด้วย AI</span>
+                                    <div id="ai-poi-btn-spinner" class="btn-spinner hidden"></div>
+                                </button>
+                            </div>
+
+                            <input type="text" id="poi-name" placeholder="ชื่อสถานที่ (AI จะช่วยเติม)"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 bg-gray-50 transition-colors">
                             
-                            <input type="text" id="poi-link" placeholder="ลิงก์ Google Maps"
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
-                            
-                            <input type="text" id="poi-notes" placeholder="โน้ตย่อ (เช่น 'ราเม็ง 24 ชม.')"
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
+                            <input type="text" id="poi-notes" placeholder="โน้ตย่อ (AI จะช่วยเติม)"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 bg-gray-50 transition-colors">
                             
                             <button id="add-poi-btn" onclick="window.app.addPOI()"
                                 class="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">เพิ่มเข้าไดเรกทอรี</button>
