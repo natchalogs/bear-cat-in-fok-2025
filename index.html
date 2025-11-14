@@ -115,13 +115,10 @@
             poiId: null
         };
         
-        // --- (v.15) Re-introducing Gemini API Configuration ---
-        // (v.15) Using the key provided by the user in the last file context.
-        // This key MUST be set and configured in Google Cloud (Billing, Referrers)
-        const geminiApiKey = "AIzaSyAfkZW59UlXSDndOkSFuTIp9rU_X4SjRcQ"; 
-        
-        // (v.8) CORRECTED URL
-        const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`;
+        // --- (v.16) REMOVED ALL GEMINI API CONFIGURATION ---
+        // No API Key needed!
+        // No Billing needed!
+        // No Google Cloud Referrer settings needed!
 
         // -----------------------------------------------------------------
         // FIREBASE CONFIG
@@ -1182,10 +1179,11 @@
                 return;
             }
             
+            // (v.15) Check for API key *only if* not in Canvas
             if (!geminiApiKey) {
                 const isCanvasEnvironment = typeof __app_id !== 'undefined';
                 if (!isCanvasEnvironment) {
-                    displayError('Gemini API Key is not set.', 'Please set the `geminiApiKey` variable in the script tag.');
+                    displayError('Gemini API Key is not set.', 'Please set the `geminiApiKey` variable in the script tag. This key is hardcoded in v.15 for gitlab.io, but it seems to be empty.');
                     return;
                 }
             }
@@ -1244,7 +1242,8 @@
                     const jsonMatch = rawText.match(/\{[\s\S]*\}/); // Find the first { ... } block
                     if (!jsonMatch) {
                         console.error("No JSON object found in AI response:", rawText);
-                        throw new Error("AI did not return a valid JSON object.");
+                        // (v.15) Show the "muddled" response to the user
+                        throw new Error(`AI did not return a valid JSON object. Response: "${rawText}"`);
                     }
                     
                     const jsonString = jsonMatch[0];
