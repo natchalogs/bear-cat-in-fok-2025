@@ -87,6 +87,7 @@
         .animate-pulse {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
+        /* (v.13) This class is no longer used, but kept for safety */
         .poi-spinner {
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-left-color: #ffffff;
@@ -148,17 +149,14 @@
             poiId: null                 
         };
         
-        // --- Gemini API Configuration ---
-        // (v.13) IMPORTANT! PASTE YOUR GEMINI API KEY HERE!
-        const geminiApiKey = "AIzaSyAfkZW59UlXSDndOkSFuTIp9rU_X4SjRcQ"; // <--- ใส่ GEMINI API KEY ของคุณตรงนี้
-        const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`;
+        // --- (v.13) REMOVED Gemini API Configuration ---
 
         // --- Firebase Config ---
-        // (v.13) Use Canvas config if available, otherwise fallback to YOUR project config
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config)
             : {
-                // (v.13) Pre-filled with your project config (as seen in earlier chat)
+                // (v.14) --- ADDING YOUR REAL FIREBASE CONFIG AS FALLBACK ---
+                // This will make it work on gitlab.io
                 apiKey: "AIzaSyDzYQTm0V6yBcOCyBGJxD65AoGRHKEOZng",
                 authDomain: "bear-cat-in-fok-2025.firebaseapp.com",
                 projectId: "bear-cat-in-fok-2025",
@@ -166,6 +164,7 @@
                 messagingSenderId: "178010604106",
                 appId: "1:178010604106:web:2dc3d30600b7a8d7769cb3",
                 measurementId: "G-KDSLTNV0MJ"
+                // --- END OF YOUR CONFIG ---
             };
 
         // --- Tailwind Configuration ---
@@ -252,42 +251,31 @@
 
                         await loadDataAndRender();
                     } else {
-                        // (v.13) Handle non-Canvas auth
-                        // If no user, try signing in anonymously IF no token is expected
-                        if (typeof __initial_auth_token === 'undefined' && !auth.currentUser) {
-                            try {
-                                console.log("No user, signing in anonymously for gitlab.io...");
-                                await signInAnonymously(auth);
-                                // This will re-trigger onAuthStateChanged
-                            } catch (anonError) {
-                                displayError("Anonymous sign-in failed", anonError);
-                                loadingScreen.classList.add('hidden');
-                                loginScreen.classList.remove('hidden'); // Show login if anon fails
-                            }
-                        } else if (typeof __initial_auth_token !== 'undefined') {
-                            // This is Canvas env, just show login
-                            userId = null;
-                            userDisplayName = null;
-                            if (unsubscribeTrip) unsubscribeTrip(); 
-                            mainApp.classList.add('hidden');
-                            loginScreen.classList.remove('hidden');
-                            userDisplay.textContent = '';
-                            logoutButton.classList.add('hidden');
-                            loadingScreen.classList.add('hidden');
-                        }
+                        userId = null;
+                        userDisplayName = null;
+                        if (unsubscribeTrip) unsubscribeTrip(); 
+
+                        mainApp.classList.add('hidden');
+                        loginScreen.classList.remove('hidden');
+                        userDisplay.textContent = '';
+                        logoutButton.classList.add('hidden');
                     }
+                    
+                    loadingScreen.classList.add('hidden');
                 });
 
-                // (v.13) Handle Canvas token auth
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    // This will be handled by the onAuthStateChanged logic above
-                    console.log("No initial auth token found, proceeding with default auth flow.");
-                    // Manually hide loading if not in Canvas and no user
-                    if (!auth.currentUser) {
-                         loadingScreen.classList.add('hidden');
-                         loginScreen.classList.remove('hidden');
+                } else if (!auth.currentUser) {
+                    // (v.14) If no token, attempt anonymous sign-in for gitlab.io
+                    // This will allow read/write access if rules are public
+                    try {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously");
+                    } catch (anonError) {
+                        console.error("Anonymous sign-in failed", anonError);
+                        // If rules *require* Google Sign-in, this will fail, 
+                        // but the onAuthStateChanged listener will correctly show the login screen.
                     }
                 }
 
@@ -312,10 +300,6 @@
         async function signOutApp() {
             try {
                 await signOut(auth);
-                // (v.13) After sign out, sign in anonymously for gitlab.io
-                if (typeof __initial_auth_token === 'undefined') {
-                    await signInAnonymously(auth);
-                }
             } catch (error) {
                 displayError("ไม่สามารถล็อกเอาต์ได้", error);
             }
@@ -323,24 +307,25 @@
 
         // --- Data Loading ---
         async function loadDataAndRender() {
-            if (!db || !userId) {
-                console.warn("Data load skipped, no DB or UserID");
+            if (!db || !auth.currentUser) {
+                console.log("Data loading skipped: DB not ready or user not authenticated.");
                 return; 
             }
             
+            // (v.14) Now that we sign in (Google or Anon), we should have a user ID.
+            userId = auth.currentUser.uid;
+            console.log("Loading data for User ID:", userId);
+
             const docRef = doc(db, docRefPath);
-            console.log("Loading data from:", docRefPath);
 
             try {
                 const docSnap = await getDoc(docRef);
                 if (!docSnap.exists()) {
-                    console.log("Document does not exist, initializing...");
                     await initializeDocument(docRef);
                 }
 
                 if (unsubscribeTrip) unsubscribeTrip();
                 unsubscribeTrip = onSnapshot(docRef, (doc) => {
-                    console.log("Received data snapshot");
                     if (doc.exists()) {
                         appData = doc.data();
                         renderUI(appData);
@@ -415,15 +400,12 @@
                 ],
                 poiCatalog: [] 
             };
-            
-            // (v.13) Only add 'createdBy' if user is fully logged in
-            if (userDisplayName) { 
+            if (userDisplayName) {
                 const createdBy = { createdBy: userDisplayName };
                 initialData.expenses.forEach(i => Object.assign(i, createdBy));
                 initialData.checklist.forEach(i => Object.assign(i, createdBy));
             }
             await setDoc(docRef, initialData);
-            console.log("Document initialized.");
         }
         
         // --- Main UI Rendering Functions ---
@@ -1249,131 +1231,7 @@
             }
         }
         
-        // --- Gemini API Functions ---
-        
-        const fetchWithRetry = async (url, options, retries = 3, delay = 1000) => {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const response = await fetch(url, options);
-                    if (response.ok) return response;
-                    if (response.status === 429 || response.status >= 500) {
-                        console.warn(`Attempt ${i + 1}/${retries}: Received status ${response.status}. Retrying in ${delay}ms...`);
-                        await new Promise(res => setTimeout(res, delay));
-                        delay *= 2; 
-                    } else {
-                        return response;
-                    }
-                } catch (error) {
-                    console.warn(`Attempt ${i + 1}/${retries}: Network error. Retrying in ${delay}ms...`, error);
-                    if (i === retries - 1) throw error; 
-                    await new Promise(res => setTimeout(res, delay));
-                    delay *= 2;
-                }
-            }
-            throw new Error('Failed to fetch after all retries.');
-        };
-
-        async function analyzeMapLink() {
-            const linkInput = document.getElementById('poi-link');
-            const nameInput = document.getElementById('poi-name');
-            const notesInput = document.getElementById('poi-notes');
-            const analyzeBtn = document.getElementById('analyze-poi-btn');
-            const analyzeBtnText = document.getElementById('analyze-poi-btn-text');
-            const analyzeBtnSpinner = document.getElementById('analyze-poi-btn-spinner');
-
-            const mapLink = linkInput.value.trim();
-            if (!mapLink) {
-                displayError("กรุณาวางลิงก์ Google Maps ก่อน");
-                return;
-            }
-            
-            // (v.13) Check for API key *only if* not in Canvas
-            if (!geminiApiKey && (typeof __app_id !== 'undefined')) {
-                // This is Canvas, but key is still blank (user didn't paste)
-                displayError("ไม่พบ API Key สำหรับ Gemini", "Please set geminiApiKey in the script.");
-                return;
-            }
-            if (!geminiApiKey && (typeof __app_id === 'undefined')) {
-                // This is Gitlab, and key is blank
-                displayError("ไม่พบ API Key สำหรับ Gemini", "Please set geminiApiKey in the script.");
-                return;
-            }
-
-
-            displayError(null); 
-            analyzeBtn.disabled = true;
-            analyzeBtnText.classList.add('hidden');
-            analyzeBtnSpinner.classList.remove('hidden');
-
-            try {
-                const systemPrompt = `You are an expert travel assistant. Analyze the following Google Maps link.
-1. Use the Google Search tool to find the official name of the place.
-2. Generate a concise, one-sentence note about what this place is (e.g., "Famous ramen restaurant", "Historic temple", "Shopping street").
-3. Respond ONLY with a valid JSON object string in the format: {"name": "Official Name", "notes": "One-sentence description"}.
-Do NOT include any text before or after the JSON object.`;
-
-                const payload = {
-                    contents: [{
-                        parts: [{ text: `Google Maps Link: ${mapLink}` }]
-                    }],
-                    systemInstruction: {
-                        parts: [{ text: systemPrompt }]
-                    },
-                    tools: [{ "google_search": {} }] 
-                };
-
-                const response = await fetchWithRetry(geminiApiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const errorBody = await response.json();
-                    const errorMsg = errorBody?.error?.message || `HTTP error! status: ${response.status}`;
-                    throw new Error(errorMsg);
-                }
-
-                const result = await response.json();
-
-                if (!result.candidates || !result.candidates[0].content || !result.candidates[0].content.parts[0].text) {
-                    throw new Error('Invalid response structure from AI.');
-                }
-                
-                const rawText = result.candidates[0].content.parts[0].text;
-                let parsedJson;
-                try {
-                    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-                    if (!jsonMatch) throw new Error("No JSON object found in AI response.");
-                    parsedJson = JSON.parse(jsonMatch[0]);
-                } catch (parseError) {
-                    console.error("Failed to parse JSON from AI response:", rawText);
-                    throw new Error("AI returned invalid JSON format.");
-                }
-
-                if (parsedJson.name) {
-                    nameInput.value = parsedJson.name;
-                    notesInput.value = parsedJson.notes || ''; 
-                    
-                    nameInput.classList.add('bg-green-100');
-                    notesInput.classList.add('bg-green-100');
-                    setTimeout(() => {
-                        nameInput.classList.remove('bg-green-100');
-                        notesInput.classList.remove('bg-green-100');
-                    }, 1500);
-                } else {
-                    throw new Error('AI response did not contain a "name" field.');
-                }
-
-            } catch (error) {
-                console.error("Gemini Analyze Error:", error);
-                displayError("ไม่สามารถวิเคราะห์ลิงก์ได้", error);
-            } finally {
-                analyzeBtn.disabled = false;
-                analyzeBtnText.classList.remove('hidden');
-                analyzeBtnSpinner.classList.add('hidden');
-            }
-        }
+        // --- (v.13) REMOVED Gemini API Functions ---
 
 
         // --- Expose functions to global scope for inline onclick ---
@@ -1404,7 +1262,7 @@ Do NOT include any text before or after the JSON object.`;
             editPOI,
             updatePOI,
             resetPoiForm,
-            analyzeMapLink,
+            // analyzeMapLink, // (v.13) REMOVED
             togglePoiForm 
         };
 
@@ -1493,19 +1351,18 @@ Do NOT include any text before or after the JSON object.`;
                         <div id="poi-form-container" class="hidden mt-4 space-y-2 border-t pt-4">
                             <h3 class="font-semibold">เพิ่ม / แก้ไข สถานที่</h3>
                             
-                            <input type="text" id="poi-link" placeholder="วางลิงก์ Google Maps (สั้น/ยาว) ที่นี่"
+                            <!-- (v.13) Updated placeholder -->
+                            <input type="text" id="poi-link" placeholder="วางลิงก์ Google Maps ที่นี่"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
                             
-                            <button id="analyze-poi-btn" onclick="window.app.analyzeMapLink()" 
-                                class="w-full px-3 py-2 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md hover:bg-yellow-200 text-sm flex items-center justify-center gap-2 transition-all duration-200 ease-in-out disabled:opacity-50">
-                                <span id="analyze-poi-btn-text">⚡ วิเคราะห์ลิงก์ด้วย AI</span>
-                                <div id="analyze-poi-btn-spinner" class="poi-spinner hidden"></div>
-                            </button>
+                            <!-- (v.13) REMOVED AI Button -->
 
-                            <input type="text" id="poi-name" placeholder="ชื่อสถานที่ (จะขึ้นเองเมื่อวิเคราะห์)"
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 bg-gray-50">
+                            <!-- (v.13) Updated placeholder and removed bg-gray-50 -->
+                            <input type="text" id="poi-name" placeholder="ชื่อสถานที่"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
                             
-                            <input type="text" id="poi-notes" placeholder="โน้ตย่อ (จะขึ้นเองเมื่อวิเคราะห์)"
+                            <!-- (v.13) Updated placeholder -->
+                            <input type="text" id="poi-notes" placeholder="โน้ตย่อ (ไม่บังคับ)"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
                             
                             <button id="add-poi-btn" onclick="window.app.addPOI()"
