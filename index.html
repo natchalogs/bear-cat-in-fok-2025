@@ -64,14 +64,7 @@
         .animate-pulse {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
-        .poi-spinner {
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-left-color: #ffffff;
-            border-radius: 50%;
-            width: 1rem;
-            height: 1rem;
-            animation: spin 1s linear infinite;
-        }
+        /* (v.17) POI Spinner is no longer needed */
     </style>
     <script type="module">
         // Firebase Imports
@@ -115,10 +108,8 @@
             poiId: null
         };
         
-        // --- (v.16) REMOVED ALL GEMINI API CONFIGURATION ---
-        // No API Key needed!
-        // No Billing needed!
-        // No Google Cloud Referrer settings needed!
+        // --- (v.17) REMOVED ALL GEMINI API CONFIGURATION ---
+        // No API Key needed. No Billing needed. No Headaches.
 
         // -----------------------------------------------------------------
         // FIREBASE CONFIG
@@ -1139,145 +1130,7 @@
             }
         }
         
-        // --- (v.15) Gemini API Function with Robust JSON Parsing ---
-        
-        const fetchWithRetry = async (url, options, retries = 3, delay = 1000) => {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const response = await fetch(url, options);
-                    if (response.ok) return response;
-                    if (response.status === 429 || response.status >= 500) {
-                        console.warn(`Attempt ${i + 1}/${retries}: Received status ${response.status}. Retrying in ${delay}ms...`);
-                        await new Promise(res => setTimeout(res, delay));
-                        delay *= 2; 
-                    } else {
-                        console.error(`Client error ${response.status}. Not retrying.`);
-                        return response; 
-                    }
-                } catch (error) { 
-                    console.warn(`Attempt ${i + 1}/${retries}: Network error. Retrying in ${delay}ms...`, error);
-                    if (i === retries - 1) throw error; 
-                    await new Promise(res => setTimeout(res, delay));
-                    delay *= 2;
-                }
-            }
-            throw new Error('Failed to fetch after all retries.');
-        };
-
-        // (v.15) Re-instating the v.12 AI logic, but with smarter JSON parsing
-        async function analyzeMapLink() {
-            const linkInput = document.getElementById('poi-link');
-            const nameInput = document.getElementById('poi-name');
-            const notesInput = document.getElementById('poi-notes');
-            const analyzeBtn = document.getElementById('analyze-poi-btn');
-            const analyzeBtnText = document.getElementById('analyze-poi-btn-text');
-            const analyzeBtnSpinner = document.getElementById('analyze-poi-btn-spinner');
-
-            const mapLink = linkInput.value.trim();
-            if (!mapLink) {
-                displayError("กรุณาวางลิงก์ Google Maps ก่อน");
-                return;
-            }
-            
-            // (v.15) Check for API key *only if* not in Canvas
-            if (!geminiApiKey) {
-                const isCanvasEnvironment = typeof __app_id !== 'undefined';
-                if (!isCanvasEnvironment) {
-                    displayError('Gemini API Key is not set.', 'Please set the `geminiApiKey` variable in the script tag. This key is hardcoded in v.15 for gitlab.io, but it seems to be empty.');
-                    return;
-                }
-            }
-
-            displayError(null); 
-            analyzeBtn.disabled = true;
-            analyzeBtnText.classList.add('hidden');
-            analyzeBtnSpinner.classList.remove('hidden');
-
-            try {
-                // (v.12/v.15) Using the robust prompt to get JSON
-                const systemPrompt = `You are a location resolver.
-1. Your ONLY job is to resolve the provided Google Maps URL using your available web search tools.
-2. You MUST find the location's official name and a brief, one-sentence description.
-3. You MUST NOT search for the literal text of the URL string. You MUST resolve the URL to its destination to find the information.
-4. You MUST respond ONLY with a valid JSON object string in the format: {"name": "Official Name", "notes": "One-sentence description"}.
-5. Do NOT include any text before or after the JSON object. Do not use markdown (e.g., \`\`\`json).`;
-
-                const payload = {
-                    contents: [{
-                        parts: [{ text: `Please resolve this Google Maps link: ${mapLink}` }]
-                    }],
-                    tools: [{ "google_search": {} }], // Keep the tool to "turn on the internet"
-                    systemInstruction: {
-                        parts: [{ text: systemPrompt }]
-                    }
-                    // We will parse the text response, so no responseSchema
-                };
-                
-                const response = await fetchWithRetry(geminiApiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    let errorMsg = `HTTP error! status: ${response.status}`;
-                    try {
-                        const errorBody = await response.json();
-                        errorMsg = errorBody?.error?.message || errorMsg;
-                    } catch (e) { /* Ignore */ }
-                    throw new Error(errorMsg);
-                }
-
-                const result = await response.json();
-
-                if (!result.candidates || !result.candidates[0].content || !result.candidates[0].content.parts[0].text) {
-                    throw new Error('Invalid response structure from AI.');
-                }
-                
-                const rawText = result.candidates[0].content.parts[0].text;
-                let parsedJson;
-                
-                // (v.15) THE REAL FIX: Extract the JSON from the text, no matter what else the AI says
-                try {
-                    const jsonMatch = rawText.match(/\{[\s\S]*\}/); // Find the first { ... } block
-                    if (!jsonMatch) {
-                        console.error("No JSON object found in AI response:", rawText);
-                        // (v.15) Show the "muddled" response to the user
-                        throw new Error(`AI did not return a valid JSON object. Response: "${rawText}"`);
-                    }
-                    
-                    const jsonString = jsonMatch[0];
-                    parsedJson = JSON.parse(jsonString);
-
-                } catch (parseError) {
-                    console.error("Failed to parse JSON from AI response:", rawText);
-                    throw new Error("AI returned invalid JSON format.");
-                }
-
-                // (v.15) Now we check the *parsed* JSON
-                if (parsedJson.name) {
-                    nameInput.value = parsedJson.name;
-                    notesInput.value = parsedJson.notes || ''; // Use notes if provided
-                    
-                    nameInput.classList.add('bg-green-100');
-                    notesInput.classList.add('bg-green-100');
-                    setTimeout(() => {
-                        nameInput.classList.remove('bg-green-100');
-                        notesInput.classList.remove('bg-green-100');
-                    }, 1500);
-                } else {
-                    throw new Error('AI response did not contain a "name" field.');
-                }
-
-            } catch (error) {
-                console.error("Gemini Analyze Error:", error);
-                displayError("ไม่สามารถวิเคราะห์ลิงก์ได้", error);
-            } finally {
-                analyzeBtn.disabled = false;
-                analyzeBtnText.classList.remove('hidden');
-                analyzeBtnSpinner.classList.add('hidden');
-            }
-        }
+        // --- (v.17) ALL AI/GEMINI FUNCTIONS REMOVED FOR STABILITY ---
 
 
         // --- Expose functions to global scope for inline onclick ---
@@ -1309,7 +1162,7 @@
             editPOI,
             updatePOI,
             resetPoiForm,
-            analyzeMapLink
+            // (v.17) analyzeMapLink removed
         };
 
         // --- Start Application ---
@@ -1464,17 +1317,12 @@
                             <input type="text" id="poi-link" placeholder="วางลิงก์ Google Maps (สั้น/ยาว) ที่นี่"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
                             
-                            <!-- (v.15) Re-instated AI button text -->
-                            <button id="analyze-poi-btn" onclick="window.app.analyzeMapLink()" 
-                                class="w-full px-3 py-2 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md hover:bg-yellow-200 text-sm flex items-center justify-center gap-2 transition-all duration-200 ease-in-out disabled:opacity-50">
-                                <span id="analyze-poi-btn-text">⚡ วิเคราะห์ลิงก์ด้วย AI</span>
-                                <div id="analyze-poi-btn-spinner" class="poi-spinner hidden"></div>
-                            </button>
+                            <!-- (v.17) Removed the "Analyze" button entirely -->
 
-                            <input type="text" id="poi-name" placeholder="ชื่อสถานที่ (จะขึ้นเองเมื่อวิเคราะห์)"
+                            <input type="text" id="poi-name" placeholder="ชื่อสถานที่ (พิมพ์เอง)"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 bg-gray-50">
                             
-                            <input type="text" id="poi-notes" placeholder="โน้ตย่อ (จะขึ้นเองเมื่อวิเคราะห์)"
+                            <input type="text" id="poi-notes" placeholder="โน้ตย่อ (พิมพ์เอง)"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
                             
                             <button id="add-poi-btn" onclick="window.app.addPOI()"
