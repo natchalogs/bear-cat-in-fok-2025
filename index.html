@@ -13,9 +13,32 @@
             font-family: 'Inter', 'Noto Sans Thai', sans-serif;
             background-color: #e2e8f0; /* bg-slate-200 */
         }
-        details[open] summary {
-            font-weight: 600;
+        details summary {
+            list-style: none; 
+            position: relative;
         }
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+        
+        details summary.summary-with-arrow::before {
+            content: '►';
+            position: absolute;
+            left: 1rem; 
+            top: 50%;
+            transform: translateY(-50%) rotate(0deg);
+            transition: transform 0.2s;
+            font-size: 0.8em;
+            color: #4338ca; /* indigo-700 */
+        }
+        details[open] summary.summary-with-arrow::before {
+            transform: translateY(-50%) rotate(90deg);
+        }
+        .summary-with-arrow {
+            padding-left: 2.5rem; 
+        }
+
+
         .timeline-item {
             position: relative;
             padding-left: 1.5rem;
@@ -64,7 +87,24 @@
         .animate-pulse {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
-        /* (v.17) POI Spinner is no longer needed */
+        .poi-spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-left-color: #ffffff;
+            border-radius: 50%;
+            width: 1rem;
+            height: 1rem;
+            animation: spin 1s linear infinite;
+        }
+        
+        .itinerary-link {
+            color: #4f46e5; /* indigo-600 */
+            text-decoration: underline;
+            word-break: break-all; 
+        }
+        .itinerary-link:hover {
+            color: #3730a3; /* indigo-800 */
+        }
+
     </style>
     <script type="module">
         // Firebase Imports
@@ -103,29 +143,30 @@
         
         let currentEdit = {
             dayIndex: null, itemId: null,
-            checklistId: null,
-            expenseId: null,
-            poiId: null
+            checklistId: null,          
+            expenseId: null,            
+            poiId: null                 
         };
         
-        // --- (v.17) REMOVED ALL GEMINI API CONFIGURATION ---
-        // No API Key needed. No Billing needed. No Headaches.
+        // --- Gemini API Configuration ---
+        // (v.13) IMPORTANT! PASTE YOUR GEMINI API KEY HERE!
+        const geminiApiKey = "AIzaSyAfkZW59UlXSDndOkSFuTIp9rU_X4SjRcQ"; // <--- ใส่ GEMINI API KEY ของคุณตรงนี้
+        const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`;
 
-        // -----------------------------------------------------------------
-        // FIREBASE CONFIG
-        // (v.11) Hardcoded the user's Firebase config for convenience.
+        // --- Firebase Config ---
+        // (v.13) Use Canvas config if available, otherwise fallback to YOUR project config
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config)
             : {
-                // Fallback config (Hardcoded from user's screenshot)
+                // (v.13) Pre-filled with your project config (as seen in earlier chat)
                 apiKey: "AIzaSyDzYQTm0V6yBcOCyBGJxD65AoGRHKEOZng",
                 authDomain: "bear-cat-in-fok-2025.firebaseapp.com",
                 projectId: "bear-cat-in-fok-2025",
                 storageBucket: "bear-cat-in-fok-2025.firebasestorage.app",
                 messagingSenderId: "178010604106",
-                appId: "1:178010604106:web:2dc3d30600b7a8d7769cb3"
+                appId: "1:178010604106:web:2dc3d30600b7a8d7769cb3",
+                measurementId: "G-KDSLTNV0MJ"
             };
-        // -----------------------------------------------------------------
 
         // --- Tailwind Configuration ---
         tailwind.config = {
@@ -138,8 +179,7 @@
                         indigo: {
                             50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe',
                             300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1',
-                            600: '#4f46e5', 700: '#4338ca', 800: '#3730a3',
-                            900: '#312e81',
+                            600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81',
                         },
                     }
                 },
@@ -165,13 +205,24 @@
             }
         }
 
+        // --- (v.9) Helper function to auto-link URLs in text ---
+        function linkify(inputText) {
+            if (!inputText) return '';
+            const urlRegex = /((https?:\/\/[^\s<]+)|(www\.[^\s<]+))/g;
+            return inputText.replace(urlRegex, (url, p1, p2, p3) => {
+                const textBefore = inputText.substring(0, inputText.indexOf(url));
+                if (textBefore.lastIndexOf('<a') > textBefore.lastIndexOf('</a>')) {
+                    return url; 
+                }
+                const fullUrl = p3 ? `http://${url}` : url; 
+                return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" class="itinerary-link">${url}</a>`;
+            });
+        }
+
+
         // --- Firebase Initialization and Auth ---
         async function initFirebaseAndAuth() {
             try {
-                if (firebaseConfig.apiKey === "AIzaSyDzYQTm0V6yBcOCyBGJxD65AoGRHKEOZng" && typeof __firebase_config === 'undefined') {
-                    console.warn("Using fallback Firebase config. This is expected if running on gitlab.io");
-                }
-                
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
@@ -201,25 +252,43 @@
 
                         await loadDataAndRender();
                     } else {
-                        if (typeof __initial_auth_token === 'undefined' || !__initial_auth_token) {
+                        // (v.13) Handle non-Canvas auth
+                        // If no user, try signing in anonymously IF no token is expected
+                        if (typeof __initial_auth_token === 'undefined' && !auth.currentUser) {
+                            try {
+                                console.log("No user, signing in anonymously for gitlab.io...");
+                                await signInAnonymously(auth);
+                                // This will re-trigger onAuthStateChanged
+                            } catch (anonError) {
+                                displayError("Anonymous sign-in failed", anonError);
+                                loadingScreen.classList.add('hidden');
+                                loginScreen.classList.remove('hidden'); // Show login if anon fails
+                            }
+                        } else if (typeof __initial_auth_token !== 'undefined') {
+                            // This is Canvas env, just show login
                             userId = null;
                             userDisplayName = null;
                             if (unsubscribeTrip) unsubscribeTrip(); 
-
                             mainApp.classList.add('hidden');
                             loginScreen.classList.remove('hidden');
                             userDisplay.textContent = '';
                             logoutButton.classList.add('hidden');
+                            loadingScreen.classList.add('hidden');
                         }
                     }
-                    
-                    loadingScreen.classList.add('hidden');
                 });
 
+                // (v.13) Handle Canvas token auth
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
-                } else if (!auth.currentUser) {
-                    console.log("No initial auth token. Waiting for user login.");
+                } else {
+                    // This will be handled by the onAuthStateChanged logic above
+                    console.log("No initial auth token found, proceeding with default auth flow.");
+                    // Manually hide loading if not in Canvas and no user
+                    if (!auth.currentUser) {
+                         loadingScreen.classList.add('hidden');
+                         loginScreen.classList.remove('hidden');
+                    }
                 }
 
             } catch (error) {
@@ -243,6 +312,10 @@
         async function signOutApp() {
             try {
                 await signOut(auth);
+                // (v.13) After sign out, sign in anonymously for gitlab.io
+                if (typeof __initial_auth_token === 'undefined') {
+                    await signInAnonymously(auth);
+                }
             } catch (error) {
                 displayError("ไม่สามารถล็อกเอาต์ได้", error);
             }
@@ -250,18 +323,24 @@
 
         // --- Data Loading ---
         async function loadDataAndRender() {
-            if (!db || !userId) return; 
+            if (!db || !userId) {
+                console.warn("Data load skipped, no DB or UserID");
+                return; 
+            }
             
             const docRef = doc(db, docRefPath);
+            console.log("Loading data from:", docRefPath);
 
             try {
                 const docSnap = await getDoc(docRef);
                 if (!docSnap.exists()) {
+                    console.log("Document does not exist, initializing...");
                     await initializeDocument(docRef);
                 }
 
                 if (unsubscribeTrip) unsubscribeTrip();
                 unsubscribeTrip = onSnapshot(docRef, (doc) => {
+                    console.log("Received data snapshot");
                     if (doc.exists()) {
                         appData = doc.data();
                         renderUI(appData);
@@ -313,10 +392,10 @@
                     }
                 ],
                 dailyItinerary: [
-                    { day: "Day 1 (27 Dec 2025): Fukuoka", items: [{ id: `item${Date.now()}`, time: "15:00", text: "Check-in ที่พัก (Phoenix inn)"}] },
+                    { day: "Day 1 (27 Dec 2025): Fukuoka", items: [{ id: `item${Date.now()}`, time: "15:00", text: "Check-in ที่พัก (Phoenix inn)", poi: null }] },
                     { day: "Day 2 (28 Dec 2025): Fukuoka", items: [] },
                     { day: "Day 3 (29 Dec 2025): Fukuoka", items: [] },
-                    { day: "Day 4 (30 Dec 2025): Travel to Osaka", items: [{ id: `item${Date.now()+1}`, time: "15:00", text: "Check-in ที่พัก (Tennoji 204)"}] },
+                    { day: "Day 4 (30 Dec 2025): Travel to Osaka", items: [{ id: `item${Date.now()+1}`, time: "15:00", text: "Check-in ที่พัก (Tennoji 204)", poi: null }] },
                     { day: "Day 5 (31 Dec 2025): Osaka", items: [] },
                     { day: "Day 6 (1 Jan 2026): Osaka/Kyoto", items: [] },
                     { day: "Day 7 (2 Jan 2026): Osaka", items: [] },
@@ -336,12 +415,15 @@
                 ],
                 poiCatalog: [] 
             };
-            if (userDisplayName) {
+            
+            // (v.13) Only add 'createdBy' if user is fully logged in
+            if (userDisplayName) { 
                 const createdBy = { createdBy: userDisplayName };
                 initialData.expenses.forEach(i => Object.assign(i, createdBy));
                 initialData.checklist.forEach(i => Object.assign(i, createdBy));
             }
             await setDoc(docRef, initialData);
+            console.log("Document initialized.");
         }
         
         // --- Main UI Rendering Functions ---
@@ -369,10 +451,10 @@
             if (!container) return;
             container.innerHTML = flightInfo.map(info => `
                 <div class="mb-4">
-                    <h4 class="font-semibold text-lg text-indigo-700">${info.title}</h4>
-                    <ul class="list-disc list-inside text-gray-700">
-                        ${info.flights.map(f => `<li>${f}</li>`).join('')}
-                    </ul>
+                    <h4 class="font-semibold text-lg text-gray-800">${info.title}</h4>
+                    <div class="text-gray-700">
+                        ${info.flights.map(f => `<p class="mb-1">${f}</p>`).join('')}
+                    </div>
                 </div>
             `).join('');
         }
@@ -382,7 +464,7 @@
             if (!container) return;
             container.innerHTML = accommodations.map(acc => `
                 <div class="mb-4">
-                    <h4 class="font-semibold text-lg text-indigo-700">${acc.name}</h4>
+                    <h4 class="font-semibold text-lg text-gray-800">${acc.name}</h4>
                     <p class="text-sm text-gray-600">${acc.dates} | ${acc.address}</p>
                     <p class="text-sm text-gray-600">📍 ${acc.station}</p>
                     <p class="text-sm text-gray-600">ราคา: ${acc.priceTHB.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</p>
@@ -406,15 +488,34 @@
             
             container.innerHTML = itinerary.map((dayItem, index) => {
                 const timelineHtml = (dayItem.items || []).sort((a, b) => a.time.localeCompare(b.time)).map(item => {
+                    
+                    let textHtml = '';
+                    let poiHtml = '';
+
+                    if (item.text) {
+                        textHtml = `<p class="text-gray-700">${linkify(item.text)}</p>`;
+                    }
+                    
+                    if (item.poi && item.poi.name && item.poi.mapLink) {
+                        poiHtml = `<p class="text-sm text-gray-700 mt-1">
+                                       📍 <a href="${item.poi.mapLink}" target="_blank" rel="noopener noreferrer" class="itinerary-link">${item.poi.name}</a>
+                                   </p>`;
+                    }
+
+                    if (!item.text && !item.poi && (typeof item.text === 'string')) {
+                         textHtml = `<p class="text-gray-700">${linkify(item.text)}</p>`;
+                    }
+
                     return `
-                    <div class="timeline-item pb-4">
+                    <div class="timeline-item pb-4 group">
                         <div class="timeline-dot"></div>
                         <div class="flex justify-between items-start">
                             <div>
                                 <span class="font-semibold text-gray-800">${item.time}</span>
-                                <p class="text-gray-700">${item.text.replace(/\n/g, '<br>')}</p>
+                                ${textHtml}
+                                ${poiHtml}
                             </div>
-                            <div class="flex-shrink-0 ml-2">
+                            <div class="flex-shrink-0 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onclick="window.app.editDailyItem(${index}, '${item.id}')"
                                     class="text-blue-500 hover:text-blue-700 text-sm font-medium">แก้ไข</button>
                                 <button onclick="window.app.removeDailyItem(${index}, '${item.id}')" 
@@ -435,19 +536,20 @@
                     const hour = i.toString().padStart(2, '0');
                     return `<option value="${hour}">${hour}</option>`;
                 }).join('');
-                const minuteOptions = ['00', '15', '30', '45'].map(min => {
+                const minuteOptions = Array.from({ length: 12 }, (_, i) => {
+                    const min = (i * 5).toString().padStart(2, '0');
                     return `<option value="${min}">${min}</option>`;
                 }).join('');
 
                 return `
-                <details ${isOpen ? 'open' : ''} class="mb-2 bg-slate-50 shadow-sm rounded-lg overflow-hidden border border-slate-200">
-                    <summary class="font-semibold p-4 cursor-pointer hover:bg-slate-100 transition-colors flex justify-between items-center gap-2">
+                <details ${isOpen ? 'open' : ''} class="mb-2 bg-slate-50 shadow-sm rounded-xl overflow-hidden border border-slate-200">
+                    <summary class="font-semibold p-3 cursor-pointer hover:bg-slate-100 transition-colors flex justify-between items-center gap-2">
                         
                         <div id="day-header-display-${index}" class="flex justify-between items-center flex-grow">
                             <span class="font-semibold text-lg text-indigo-700">${dayItem.day}</span>
                             <button onclick="window.app.toggleDayHeaderEdit(${index}, event, true)" 
                                     class="ml-2 p-2 rounded-full hover:bg-gray-200 flex-shrink-0">
-                                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
+                                <svg class="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
                             </button>
                         </div>
 
@@ -477,14 +579,13 @@
                                         ${minuteOptions}
                                     </select>
                                 </div>
-                                <input type="text" id="item-text-${index}" placeholder="รายละเอียดกิจกรรม" class="md:col-span-2 p-2 border border-gray-300 rounded-md">
+                                <input type="text" id="item-text-${index}" placeholder="รายละเอียดกิจกรรม (ใส่ลิงก์ได้)" class="md:col-span-2 p-2 border border-gray-300 rounded-md">
                             </div>
                             <div class="flex items-center gap-2 mt-2">
                                 <select id="poi-select-${index}" class="flex-grow p-2 border border-gray-300 rounded-md">
-                                    <option value="">-- เลือกสถานที่จากไดเรกทอรี --</option>
+                                    <option value="">-- เลือกสถานที่ (ไม่บังคับ) --</option>
                                     ${poiOptions}
                                 </select>
-                                <button onclick="window.app.addPoiToText(${index})" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-sm">ใช้</button>
                             </div>
                             <button id="add-item-btn-${index}" onclick="window.app.addDailyItem(${index})"
                                 class="mt-2 w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">
@@ -521,7 +622,7 @@
                 list.innerHTML += `
                     <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md group border-b border-gray-100">
                         <div class="flex items-center flex-grow mr-2">
-                            <span class="${isDone ? 'text-gray-500 line-through' : 'text-gray-800'}">${item.name}</span>
+                            <span class="${isDone ? 'text-gray-500' : 'text-gray-800'}">${item.name}</span>
                             
                             <div class="flex-shrink-0 ml-3 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onclick="window.app.editChecklistItem('${item.id}')"
@@ -593,6 +694,7 @@
                 const notesHtml = poi.notes 
                     ? `<p class="text-sm text-gray-600 mt-1"><em>โน้ต: ${poi.notes}</em></p>` 
                     : '';
+
                 list.innerHTML += `
                     <li class="p-2 border-b border-gray-100 hover:bg-gray-50 group">
                         <div class="flex justify-between items-center">
@@ -683,9 +785,11 @@
             
             const [hour, minute] = item.time.split(':');
             document.getElementById(`item-hour-${dayIndex}`).value = hour || '09';
-            document.getElementById(`item-minute-${dayIndex}`).value = minute || '00';
+            const roundedMinute = (Math.round(parseInt(minute || '0', 10) / 5) * 5).toString().padStart(2, '0');
+            document.getElementById(`item-minute-${dayIndex}`).value = roundedMinute;
             
-            document.getElementById(`item-text-${dayIndex}`).value = item.text;
+            document.getElementById(`item-text-${dayIndex}`).value = item.text || '';
+            document.getElementById(`poi-select-${dayIndex}`).value = item.poi ? item.poi.id : '';
 
             document.getElementById(`add-item-btn-${dayIndex}`).classList.add('hidden');
             document.getElementById(`update-item-btn-${dayIndex}`).classList.remove('hidden');
@@ -704,6 +808,7 @@
             document.getElementById(`item-hour-${dayIndex}`).value = '09';
             document.getElementById(`item-minute-${dayIndex}`).value = '00';
             document.getElementById(`item-text-${dayIndex}`).value = '';
+            document.getElementById(`poi-select-${dayIndex}`).value = ''; 
 
             document.getElementById(`add-item-btn-${dayIndex}`).classList.remove('hidden');
             document.getElementById(`update-item-btn-${dayIndex}`).classList.add('hidden');
@@ -717,12 +822,18 @@
             const hourInput = document.getElementById(`item-hour-${dayIndex}`);
             const minuteInput = document.getElementById(`item-minute-${dayIndex}`);
             const textInput = document.getElementById(`item-text-${dayIndex}`);
+            const poiSelect = document.getElementById(`poi-select-${dayIndex}`); 
             
             const newTime = `${hourInput.value}:${minuteInput.value}`;
             const newText = textInput.value.trim();
+            
+            const selectedPoiId = poiSelect.value;
+            const newPoi = selectedPoiId 
+                ? appData.poiCatalog.find(p => p.id === selectedPoiId) || null
+                : null;
 
-            if (!newText) {
-                displayError("กรุณาใส่รายละเอียดกิจกรรม");
+            if (!newText && !newPoi) { 
+                displayError("กรุณาใส่รายละเอียดกิจกรรม หรือเลือกสถานที่");
                 return;
             }
             
@@ -732,7 +843,7 @@
                 if (index === dayIndex) {
                     const newItems = day.items.map(item => {
                         if (item.id === itemId) {
-                            return { ...item, time: newTime, text: newText, updatedBy: userDisplayName };
+                            return { ...item, time: newTime, text: newText, poi: newPoi, updatedBy: userDisplayName };
                         }
                         return item;
                     });
@@ -748,20 +859,28 @@
             const hourInput = document.getElementById(`item-hour-${dayIndex}`);
             const minuteInput = document.getElementById(`item-minute-${dayIndex}`);
             const textInput = document.getElementById(`item-text-${dayIndex}`);
-            if (!hourInput || !minuteInput || !textInput || !appData) return;
+            const poiSelect = document.getElementById(`poi-select-${dayIndex}`); 
+            
+            if (!hourInput || !minuteInput || !textInput || !poiSelect || !appData) return;
 
             const time = `${hourInput.value}:${minuteInput.value}`;
             const text = textInput.value.trim();
+            
+            const selectedPoiId = poiSelect.value;
+            const selectedPoi = selectedPoiId 
+                ? appData.poiCatalog.find(p => p.id === selectedPoiId) || null
+                : null;
 
-            if (!text) {
-                displayError("กรุณาใส่รายละเอียดกิจกรรม");
+            if (!text && !selectedPoi) { 
+                displayError("กรุณาใส่รายละเอียดกิจกรรม หรือเลือกสถานที่");
                 return;
             }
 
             const newItem = {
                 id: `item${Date.now()}`,
                 time: time,
-                text: text,
+                text: text, 
+                poi: selectedPoi, 
                 createdBy: userDisplayName 
             };
 
@@ -775,6 +894,7 @@
             
             await updateItinerary(newItinerary);
             textInput.value = '';
+            poiSelect.value = ''; 
         }
         
         async function removeDailyItem(dayIndex, itemId) {
@@ -809,27 +929,9 @@
                 displayError("ไม่สามารถเพิ่มวันใหม่ได้", error);
             }
         }
-
-        function addPoiToText(dayIndex) {
-            const selectInput = document.getElementById(`poi-select-${dayIndex}`);
-            const textInput = document.getElementById(`item-text-${dayIndex}`);
-            if (!selectInput || !textInput || !appData) return;
-            
-            const selectedPoiId = selectInput.value;
-            if (selectedPoiId) {
-                const poi = appData.poiCatalog.find(p => p.id === selectedPoiId);
-                if (poi) {
-                    let poiText = `${poi.name} (แผนที่: ${poi.mapLink})`;
-                    if (poi.notes && poi.notes.trim() !== '') {
-                        poiText += ` [โน้ต: ${poi.notes}]`;
-                    }
-                    textInput.value = (textInput.value.trim() + ` ${poiText}`).trim();
-                }
-                selectInput.value = ""; 
-            }
-        }
-
+        
         // --- EXPENSE FUNCTIONS ---
+
         function resetExpenseForm() {
             document.getElementById('expense-name').value = '';
             document.getElementById('expense-amount').value = '';
@@ -927,6 +1029,7 @@
         }
         
         // --- CHECKLIST FUNCTIONS ---
+        
         function resetChecklistForm() {
             document.getElementById('checklist-name').value = '';
             document.getElementById('add-checklist-btn').classList.remove('hidden');
@@ -1027,6 +1130,20 @@
         }
 
         // --- POI FUNCTIONS ---
+        
+        function togglePoiForm(show) {
+            const form = document.getElementById('poi-form-container');
+            const showBtn = document.getElementById('show-poi-form-btn');
+            if (show) {
+                form.classList.remove('hidden');
+                showBtn.classList.add('hidden');
+            } else {
+                form.classList.add('hidden');
+                showBtn.classList.remove('hidden');
+                resetPoiForm(); 
+            }
+        }
+
         function resetPoiForm() {
             document.getElementById('poi-name').value = '';
             document.getElementById('poi-link').value = '';
@@ -1040,6 +1157,8 @@
         function editPOI(id) {
             const item = appData.poiCatalog.find(i => i.id === id);
             if (!item) return;
+
+            togglePoiForm(true); 
 
             currentEdit.poiId = id;
             document.getElementById('poi-name').value = item.name;
@@ -1081,7 +1200,7 @@
             try {
                 const docRef = getTripDocRef();
                 await updateDoc(docRef, { poiCatalog: newPoiCatalog });
-                resetPoiForm();
+                togglePoiForm(false); 
             } catch (error) {
                 displayError("ไม่สามารถอัปเดต POI ได้", error);
             }
@@ -1108,7 +1227,7 @@
                 try {
                     const docRef = getTripDocRef();
                     await updateDoc(docRef, { poiCatalog: arrayUnion(newPOI) });
-                    resetPoiForm();
+                    togglePoiForm(false); 
                 } catch (error) {
                     displayError("ไม่สามารถเพิ่ม POI ได้", error);
                 }
@@ -1130,7 +1249,131 @@
             }
         }
         
-        // --- (v.17) ALL AI/GEMINI FUNCTIONS REMOVED FOR STABILITY ---
+        // --- Gemini API Functions ---
+        
+        const fetchWithRetry = async (url, options, retries = 3, delay = 1000) => {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) return response;
+                    if (response.status === 429 || response.status >= 500) {
+                        console.warn(`Attempt ${i + 1}/${retries}: Received status ${response.status}. Retrying in ${delay}ms...`);
+                        await new Promise(res => setTimeout(res, delay));
+                        delay *= 2; 
+                    } else {
+                        return response;
+                    }
+                } catch (error) {
+                    console.warn(`Attempt ${i + 1}/${retries}: Network error. Retrying in ${delay}ms...`, error);
+                    if (i === retries - 1) throw error; 
+                    await new Promise(res => setTimeout(res, delay));
+                    delay *= 2;
+                }
+            }
+            throw new Error('Failed to fetch after all retries.');
+        };
+
+        async function analyzeMapLink() {
+            const linkInput = document.getElementById('poi-link');
+            const nameInput = document.getElementById('poi-name');
+            const notesInput = document.getElementById('poi-notes');
+            const analyzeBtn = document.getElementById('analyze-poi-btn');
+            const analyzeBtnText = document.getElementById('analyze-poi-btn-text');
+            const analyzeBtnSpinner = document.getElementById('analyze-poi-btn-spinner');
+
+            const mapLink = linkInput.value.trim();
+            if (!mapLink) {
+                displayError("กรุณาวางลิงก์ Google Maps ก่อน");
+                return;
+            }
+            
+            // (v.13) Check for API key *only if* not in Canvas
+            if (!geminiApiKey && (typeof __app_id !== 'undefined')) {
+                // This is Canvas, but key is still blank (user didn't paste)
+                displayError("ไม่พบ API Key สำหรับ Gemini", "Please set geminiApiKey in the script.");
+                return;
+            }
+            if (!geminiApiKey && (typeof __app_id === 'undefined')) {
+                // This is Gitlab, and key is blank
+                displayError("ไม่พบ API Key สำหรับ Gemini", "Please set geminiApiKey in the script.");
+                return;
+            }
+
+
+            displayError(null); 
+            analyzeBtn.disabled = true;
+            analyzeBtnText.classList.add('hidden');
+            analyzeBtnSpinner.classList.remove('hidden');
+
+            try {
+                const systemPrompt = `You are an expert travel assistant. Analyze the following Google Maps link.
+1. Use the Google Search tool to find the official name of the place.
+2. Generate a concise, one-sentence note about what this place is (e.g., "Famous ramen restaurant", "Historic temple", "Shopping street").
+3. Respond ONLY with a valid JSON object string in the format: {"name": "Official Name", "notes": "One-sentence description"}.
+Do NOT include any text before or after the JSON object.`;
+
+                const payload = {
+                    contents: [{
+                        parts: [{ text: `Google Maps Link: ${mapLink}` }]
+                    }],
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
+                    tools: [{ "google_search": {} }] 
+                };
+
+                const response = await fetchWithRetry(geminiApiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    const errorMsg = errorBody?.error?.message || `HTTP error! status: ${response.status}`;
+                    throw new Error(errorMsg);
+                }
+
+                const result = await response.json();
+
+                if (!result.candidates || !result.candidates[0].content || !result.candidates[0].content.parts[0].text) {
+                    throw new Error('Invalid response structure from AI.');
+                }
+                
+                const rawText = result.candidates[0].content.parts[0].text;
+                let parsedJson;
+                try {
+                    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                    if (!jsonMatch) throw new Error("No JSON object found in AI response.");
+                    parsedJson = JSON.parse(jsonMatch[0]);
+                } catch (parseError) {
+                    console.error("Failed to parse JSON from AI response:", rawText);
+                    throw new Error("AI returned invalid JSON format.");
+                }
+
+                if (parsedJson.name) {
+                    nameInput.value = parsedJson.name;
+                    notesInput.value = parsedJson.notes || ''; 
+                    
+                    nameInput.classList.add('bg-green-100');
+                    notesInput.classList.add('bg-green-100');
+                    setTimeout(() => {
+                        nameInput.classList.remove('bg-green-100');
+                        notesInput.classList.remove('bg-green-100');
+                    }, 1500);
+                } else {
+                    throw new Error('AI response did not contain a "name" field.');
+                }
+
+            } catch (error) {
+                console.error("Gemini Analyze Error:", error);
+                displayError("ไม่สามารถวิเคราะห์ลิงก์ได้", error);
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtnText.classList.remove('hidden');
+                analyzeBtnSpinner.classList.add('hidden');
+            }
+        }
 
 
         // --- Expose functions to global scope for inline onclick ---
@@ -1140,7 +1383,6 @@
             addDailyItem,
             removeDailyItem,
             addDay,
-            addPoiToText,
             addExpense,
             removeExpenseItem, 
             addChecklistItem,
@@ -1162,7 +1404,8 @@
             editPOI,
             updatePOI,
             resetPoiForm,
-            // (v.17) analyzeMapLink removed
+            analyzeMapLink,
+            togglePoiForm 
         };
 
         // --- Start Application ---
@@ -1170,6 +1413,7 @@
 
     </script>
 </head>
+
 <body class="bg-slate-200 font-sans">
     
     <!-- Loading Screen -->
@@ -1233,20 +1477,69 @@
                     </div>
                 </div>
 
-                <!-- 2. Accommodation -->
+                <!-- (v.9) POI Directory MOVED HERE -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                    <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">🏨 ที่พักที่จองแล้ว</h2>
-                    <div id="accommodation-container" class="p-5 divide-y divide-gray-200">
-                        <!-- Accommodation info will be rendered here -->
+                    <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">📍 ไดเรกทอรีสถานที่ (POI)</h2>
+                    <div class="p-5">
+                        <ul id="poi-list" class="space-y-3 mb-4 max-h-96 overflow-y-auto">
+                            <!-- POI items here -->
+                        </ul>
+                        
+                        <button id="show-poi-form-btn" onclick="window.app.togglePoiForm(true)"
+                            class="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-all duration-200 ease-in-out">
+                            + เพิ่มสถานที่ใหม่
+                        </button>
+                        
+                        <div id="poi-form-container" class="hidden mt-4 space-y-2 border-t pt-4">
+                            <h3 class="font-semibold">เพิ่ม / แก้ไข สถานที่</h3>
+                            
+                            <input type="text" id="poi-link" placeholder="วางลิงก์ Google Maps (สั้น/ยาว) ที่นี่"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
+                            
+                            <button id="analyze-poi-btn" onclick="window.app.analyzeMapLink()" 
+                                class="w-full px-3 py-2 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md hover:bg-yellow-200 text-sm flex items-center justify-center gap-2 transition-all duration-200 ease-in-out disabled:opacity-50">
+                                <span id="analyze-poi-btn-text">⚡ วิเคราะห์ลิงก์ด้วย AI</span>
+                                <div id="analyze-poi-btn-spinner" class="poi-spinner hidden"></div>
+                            </button>
+
+                            <input type="text" id="poi-name" placeholder="ชื่อสถานที่ (จะขึ้นเองเมื่อวิเคราะห์)"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 bg-gray-50">
+                            
+                            <input type="text" id="poi-notes" placeholder="โน้ตย่อ (จะขึ้นเองเมื่อวิเคราะห์)"
+                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
+                            
+                            <button id="add-poi-btn" onclick="window.app.addPOI()"
+                                class="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">เพิ่มเข้าไดเรกทอรี</button>
+                            <button id="update-poi-btn" onclick="window.app.updatePOI()"
+                                class="hidden w-full px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-all duration-200 ease-in-out">บันทึกการแก้ไข</button>
+                            <button id="cancel-poi-btn" onclick="window.app.togglePoiForm(false)"
+                                class="hidden w-full px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-all duration-200 ease-in-out">ยกเลิก</button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 3. Flight Info -->
+                <!-- (v.9) Accommodation - Converted to <details> -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                    <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">✈️ ข้อมูลเที่ยวบินหลัก</h2>
-                    <div id="flight-info-container" class="p-5 divide-y divide-gray-200">
-                        <!-- Flight info will be rendered here -->
-                    </div>
+                    <details open>
+                        <summary class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200 cursor-pointer hover:bg-slate-50 summary-with-arrow">
+                            🏨 ที่พักที่จองแล้ว
+                        </summary>
+                        <div id="accommodation-container" class="p-5 divide-y divide-gray-200">
+                            <!-- Accommodation info will be rendered here -->
+                        </div>
+                    </details>
+                </div>
+
+                <!-- (v.9) Flight Info - Converted to <details> -->
+                <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                    <details open>
+                        <summary class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200 cursor-pointer hover:bg-slate-50 summary-with-arrow">
+                            ✈️ ข้อมูลเที่ยวบินหลัก
+                        </summary>
+                        <div id="flight-info-container" class="p-5 divide-y divide-gray-200">
+                            <!-- Flight info will be rendered here -->
+                        </div>
+                    </details>
                 </div>
 
             </div>
@@ -1299,37 +1592,6 @@
                             <button id="update-expense-btn" onclick="window.app.updateExpenseItem()"
                                 class="hidden w-full px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-all duration-200 ease-in-out">บันทึกการแก้ไข</button>
                             <button id="cancel-expense-btn" onclick="window.app.resetExpenseForm()"
-                                class="hidden w-full px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-all duration-200 ease-in-out">ยกเลิก</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 3. POI Directory -->
-                <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                    <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">📍 ไดเรกทอรีสถานที่ (POI)</h2>
-                    <div class="p-5">
-                        <ul id="poi-list" class="space-y-3 mb-4 max-h-60 overflow-y-auto">
-                            <!-- POI items here -->
-                        </ul>
-                        <div class="mt-4 space-y-2 border-t pt-4">
-                            <h3 class="font-semibold">เพิ่ม / แก้ไข สถานที่</h3>
-                            
-                            <input type="text" id="poi-link" placeholder="วางลิงก์ Google Maps (สั้น/ยาว) ที่นี่"
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
-                            
-                            <!-- (v.17) Removed the "Analyze" button entirely -->
-
-                            <input type="text" id="poi-name" placeholder="ชื่อสถานที่ (พิมพ์เอง)"
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 bg-gray-50">
-                            
-                            <input type="text" id="poi-notes" placeholder="โน้ตย่อ (พิมพ์เอง)"
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
-                            
-                            <button id="add-poi-btn" onclick="window.app.addPOI()"
-                                class="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">เพิ่มเข้าไดเรกทอรี</button>
-                            <button id="update-poi-btn" onclick="window.app.updatePOI()"
-                                class="hidden w-full px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-all duration-200 ease-in-out">บันทึกการแก้ไข</button>
-                            <button id="cancel-poi-btn" onclick="window.app.resetPoiForm()"
                                 class="hidden w-full px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-all duration-200 ease-in-out">ยกเลิก</button>
                         </div>
                     </div>
