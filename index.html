@@ -116,10 +116,8 @@
         };
         
         // --- (v.7) Gemini API Configuration ---
-        // IMPORTANT: If running outside the original environment (e.g., gitlab.io),
-        // you MUST provide your own Gemini API key here.
-        // (v.11) This is the ONLY key you need to paste.
-        const geminiApiKey = "AIzaSyAfkZW59UlXSDndOkSFuTIp9rU_X4SjRcQ"; // <--- PASTE YOUR GEMINI API KEY HERE
+        // (v.13) Using the key provided by the user in the last file context.
+        const geminiApiKey = "AIzaSyAfkZW59UlXSDndOkSFuTIp9rU_X4SjRcQ"; 
         
         // (v.8) CORRECTED URL
         const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`;
@@ -137,7 +135,6 @@
                 storageBucket: "bear-cat-in-fok-2025.firebasestorage.app",
                 messagingSenderId: "178010604106",
                 appId: "1:178010604106:web:2dc3d30600b7a8d7769cb3"
-                // measurementId: "G-KDSLTNV0MJ" // (Not needed for Auth/Firestore)
             };
         // -----------------------------------------------------------------
 
@@ -182,7 +179,6 @@
         // --- Firebase Initialization and Auth ---
         async function initFirebaseAndAuth() {
             try {
-                // (v.11) Check if Firebase config is still placeholder
                 if (firebaseConfig.apiKey === "YOUR_API_KEY") {
                      displayError("Firebase Config is missing.", "Please update the firebaseConfig object in the script.");
                      document.getElementById('loading-screen').classList.add('hidden');
@@ -208,7 +204,6 @@
                         mainApp.classList.remove('hidden');
                         loginScreen.classList.add('hidden');
                         
-                        // (v.7) Add null check for userDisplayName
                         if (userDisplayName) {
                             const shortName = userDisplayName.split(' ')[0];
                             userDisplay.textContent = shortName;
@@ -1171,11 +1166,11 @@
             throw new Error('Failed to fetch after all retries.');
         };
 
-        // (v.12) Updated AI function
+        // (v.13) Simplified AI function (as requested)
         async function analyzeMapLink() {
             const linkInput = document.getElementById('poi-link');
             const nameInput = document.getElementById('poi-name');
-            const notesInput = document.getElementById('poi-notes');
+            const notesInput = document.getElementById('poi-notes'); // We still need this to clear it
             const analyzeBtn = document.getElementById('analyze-poi-btn');
             const analyzeBtnText = document.getElementById('analyze-poi-btn-text');
             const analyzeBtnSpinner = document.getElementById('analyze-poi-btn-spinner');
@@ -1186,9 +1181,7 @@
                 return;
             }
             
-            // (v.11) Updated check to only validate geminiApiKey
             if (!geminiApiKey) {
-                 // Check if the app is running in the intended environment which provides the key
                 const isCanvasEnvironment = typeof __app_id !== 'undefined';
                 if (!isCanvasEnvironment) {
                     displayError('Gemini API Key is not set.', 'Please set the `geminiApiKey` variable in the script tag.');
@@ -1200,26 +1193,26 @@
             analyzeBtn.disabled = true;
             analyzeBtnText.classList.add('hidden');
             analyzeBtnSpinner.classList.remove('hidden');
+            
+            // (v.13) Clear notes field immediately
+            notesInput.value = '';
 
             try {
-                // (v.12) New System Prompt: Tell it WHAT to do (resolve URL), not HOW (don't search text)
+                // (v.13) Simplified System Prompt: Ask *only* for the name as text.
                 const systemPrompt = `You are a location resolver.
 1. Your ONLY job is to resolve the provided Google Maps URL using your available web search tools.
-2. You MUST find the location's official name and a brief, one-sentence description.
-3. You MUST NOT search for the literal text of the URL string. You MUST resolve the URL to its destination to find the information.
-4. You MUST respond ONLY with a valid JSON object string in the format: {"name": "Official Name", "notes": "One-sentence description"}.
-5. Do NOT include any text before or after the JSON object. Do not use markdown (e.g., \`\`\`json).`;
+2. You MUST find the location's official name.
+3. You MUST respond ONLY with the location's official name as plain text.
+4. Do NOT include any other text, descriptions, apologies, or markdown (e.g., \`\`\`). Just the name.`;
 
                 const payload = {
                     contents: [{
-                        parts: [{ text: `Please resolve this Google Maps link: ${mapLink}` }]
+                        parts: [{ text: `Please resolve this Google Maps link and return ONLY the official name: ${mapLink}` }]
                     }],
-                    // (v.12) Re-added 'tools' to "turn on the internet" for the model
-                    tools: [{ "google_search": {} }],
+                    tools: [{ "google_search": {} }], // Keep the tool to "turn on the internet"
                     systemInstruction: {
                         parts: [{ text: systemPrompt }]
                     }
-                    // (v.10) We parse the text response, so no responseSchema
                 };
                 
                 const response = await fetchWithRetry(geminiApiUrl, {
@@ -1243,29 +1236,24 @@
                     throw new Error('Invalid response structure from AI.');
                 }
                 
-                const rawText = result.candidates[0].content.parts[0].text;
-                let parsedJson;
-                try {
-                    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-                    if (!jsonMatch) throw new Error("No JSON object found in AI response.");
-                    parsedJson = JSON.parse(jsonMatch[0]);
-                } catch (parseError) {
-                    console.error("Failed to parse JSON from AI response:", rawText);
-                    throw new Error("AI returned invalid JSON format.");
-                }
+                // (v.13) The response is plain text, not JSON
+                const locationName = result.candidates[0].content.parts[0].text.trim();
 
-                if (parsedJson.name) {
-                    nameInput.value = parsedJson.name;
-                    notesInput.value = parsedJson.notes || ''; 
+                // (v.13) Basic validation
+                if (locationName && locationName.length > 2 && locationName.length < 150) {
+                    nameInput.value = locationName;
                     
                     nameInput.classList.add('bg-green-100');
-                    notesInput.classList.add('bg-green-100');
                     setTimeout(() => {
                         nameInput.classList.remove('bg-green-100');
-                        notesInput.classList.remove('bg-green-100');
                     }, 1500);
+                    
+                    // (v.13) Focus on the notes input so user can type next
+                    notesInput.focus();
+
                 } else {
-                    throw new Error('AI response did not contain a "name" field.');
+                    console.error("AI returned invalid text:", locationName);
+                    throw new Error('AI returned an invalid name.');
                 }
 
             } catch (error) {
@@ -1472,7 +1460,7 @@
                             <input type="text" id="poi-name" placeholder="ชื่อสถานที่ (จะขึ้นเองเมื่อวิเคราะห์)"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 bg-gray-50">
                             
-                            <input type="text" id="poi-notes" placeholder="โน้ตย่อ (จะขึ้นเองเมื่อวิเคราะห์)"
+                            <input type="text" id="poi-notes" placeholder="โน้ตย่อ (พิมพ์เพิ่มเอง)"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
                             
                             <button id="add-poi-btn" onclick="window.app.addPOI()"
