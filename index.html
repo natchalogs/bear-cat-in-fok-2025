@@ -4,13 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- (v.7) Updated Title -->
     <title>Bear Cat In FOK 2025</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;700&display=swap"
         rel="stylesheet">
     <style>
-        /* (v.6) Updated body background for contrast */
         body {
             font-family: 'Inter', 'Noto Sans Thai', sans-serif;
             background-color: #e2e8f0; /* bg-slate-200 */
@@ -47,8 +45,6 @@
             border-radius: 9999px;
             border: 2px solid white;
         }
-
-        /* (v.6) Updated Loading Spinner animation */
         .loader {
             border: 4px solid #f3f3f3; 
             border-top: 4px solid #4f46e5; /* indigo-600 */
@@ -61,7 +57,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* (v.6) Pulse animation for loading text */
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -69,8 +64,6 @@
         .animate-pulse {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
-
-        /* (v.7) Spinner for POI button */
         .poi-spinner {
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-left-color: #ffffff;
@@ -89,8 +82,8 @@
             GoogleAuthProvider,
             signInWithPopup,
             signOut,
-            signInWithCustomToken, // Added for potential environment compatibility
-            signInAnonymously      // Added for fallback
+            signInWithCustomToken, 
+            signInAnonymously      
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import {
             getFirestore,
@@ -108,45 +101,43 @@
         let app, db, auth;
         let userId, userDisplayName;
         
-        // (v.7) Use __app_id if available (for Canvas environment)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const tripDocId = `mhee-maew-trip-2025`; // Using a consistent ID
+        const tripDocId = `mhee-maew-trip-2025`; 
         const docRefPath = `/artifacts/${appId}/public/data/tripPlans/${tripDocId}`;
 
         let appData = null; 
         let unsubscribeTrip = null; 
         
-        // (v.5) Editing state for Checklist, Expenses, POI
         let currentEdit = {
-            dayIndex: null, itemId: null, // Itinerary
-            checklistId: null,           // Checklist
-            expenseId: null,             // Expenses
-            poiId: null                  // POI
+            dayIndex: null, itemId: null,
+            checklistId: null,
+            expenseId: null,
+            poiId: null
         };
         
         // --- (v.7) Gemini API Configuration ---
         // IMPORTANT: If running outside the original environment (e.g., gitlab.io),
         // you MUST provide your own Gemini API key here.
+        // (v.11) This is the ONLY key you need to paste.
         const geminiApiKey = "AIzaSyAfkZW59UlXSDndOkSFuTIp9rU_X4SjRcQ"; // <--- PASTE YOUR GEMINI API KEY HERE
         
-        // (v.8) CORRECTED URL (generativelanguage)
+        // (v.8) CORRECTED URL
         const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`;
 
         // -----------------------------------------------------------------
         // FIREBASE CONFIG
-        // (v.7) Use __firebase_config if available (for Canvas environment)
-        // (v.8) User must re-populate this fallback config
+        // (v.11) Hardcoded the user's Firebase config for convenience.
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config)
             : {
-                // Fallback config (USER MUST REPLACE THIS if not in Canvas)
-                // (v.9) User has confirmed they will re-populate this
-                apiKey: "AIzaSyDzYQTm0V6yBcOCyBGJxD65AoGRHKEOZng", // <--- PASTE FIREBASE API KEY
-                authDomain: "bear-cat-in-fok-2025.firebaseapp.com", // <--- PASTE FIREBASE AUTH DOMAIN
-                projectId: "bear-cat-in-fok-2025", // <--- PASTE FIREBASE PROJECT ID
-                storageBucket: "bear-cat-in-fok-2025.firebasestorage.app", // <--- PASTE FIREBASE STORAGE BUCKET
-                messagingSenderId: "178010604106", // <--- PASTE FIREBASE SENDER ID
-                appId: "1:178010604106:web:2dc3d30600b7a8d7769cb3" // <--- PASTE FIREBASE APP ID
+                // Fallback config (Hardcoded from user's screenshot)
+                apiKey: "AIzaSyDzYQTm0V6yBcOCyBGJxD65AoGRHKEOZng",
+                authDomain: "bear-cat-in-fok-2025.firebaseapp.com",
+                projectId: "bear-cat-in-fok-2025",
+                storageBucket: "bear-cat-in-fok-2025.firebasestorage.app",
+                messagingSenderId: "178010604106",
+                appId: "1:178010604106:web:2dc3d30600b7a8d7769cb3"
+                // measurementId: "G-KDSLTNV0MJ" // (Not needed for Auth/Firestore)
             };
         // -----------------------------------------------------------------
 
@@ -157,18 +148,11 @@
                     fontFamily: {
                         sans: ['Inter', 'Noto Sans Thai', 'sans-serif'],
                     },
-                    // (v.6) Added indigo colors for theme
                     colors: {
                         indigo: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            200: '#c7d2fe',
-                            300: '#a5b4fc',
-                            400: '#818cf8',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            800: '#3730a3',
+                            50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe',
+                            300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1',
+                            600: '#4f46e5', 700: '#4338ca', 800: '#3730a3',
                             900: '#312e81',
                         },
                     }
@@ -184,7 +168,6 @@
                 if (message) {
                     errorText.textContent = `เกิดข้อผิดพลาด: ${message}. ${error ? (error.message || error) : ''}`;
                     errorElement.classList.remove('hidden');
-                    // (v.7) Scroll to error
                     errorElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 } else {
                     errorText.textContent = '';
@@ -199,6 +182,13 @@
         // --- Firebase Initialization and Auth ---
         async function initFirebaseAndAuth() {
             try {
+                // (v.11) Check if Firebase config is still placeholder
+                if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+                     displayError("Firebase Config is missing.", "Please update the firebaseConfig object in the script.");
+                     document.getElementById('loading-screen').classList.add('hidden');
+                     return;
+                }
+                
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
@@ -242,18 +232,15 @@
                     loadingScreen.classList.add('hidden');
                 });
 
-                // (v.7) Handle Auth based on environment
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else if (!auth.currentUser) {
-                    // Fallback for environments without the token (like gitlab.io)
                     console.log("No initial auth token. Waiting for user login.");
                 }
 
             } catch (error) {
                 displayError("ไม่สามารถเริ่มต้น Firebase ได้", error);
                 document.getElementById('loading-screen').classList.add('hidden');
-                // (v.6) Show login screen even if auth fails, so user can try
                 document.getElementById('login-screen').classList.remove('hidden');
             }
         }
@@ -262,7 +249,6 @@
         async function signInWithGoogle() {
             const provider = new GoogleAuthProvider();
             try {
-                // (v.7) Clear previous errors before login
                 displayError(null);
                 await signInWithPopup(auth, provider);
             } catch (error) {
@@ -280,9 +266,8 @@
 
         // --- Data Loading ---
         async function loadDataAndRender() {
-            if (!db || !userId) return; // (v.7) Wait for userId
+            if (!db || !userId) return; 
             
-            // (v.7) Use full path for doc ref
             const docRef = doc(db, docRefPath);
 
             try {
@@ -307,14 +292,13 @@
             }
         }
 
-        // --- Initial Document Data (with corrected links and empty POI) ---
+        // --- Initial Document Data ---
         async function initializeDocument(docRef) {
             const initialData = {
                 flightInfo: [
                     {
                         title: "ขาไป (BKK → FUK)",
                         flights: [
-                            // (v.7) Updated to YYYY
                             "26 Oct 2025, 23:50 (BKK) → 27 Oct 04:50 (MNL) | PR733 | ที่นั่ง 52J, 52K",
                             "27 Oct 2025, 10:00 (MNL) → 14:40 (FUK) | PR426 | ที่นั่ง 51A, 51B"
                         ]
@@ -329,7 +313,6 @@
                 accommodations: [
                     {
                         name: "旧P203 Phoenix inn (Fukuoka)",
-                        // (v.7) Updated to YYYY
                         dates: "27 Dec - 30 Dec 2025",
                         address: "5-chōme-4-15 Katakasu, Hakata Ward",
                         mapLink: "https://www.google.com/maps/place/5-ch%C5%8Dme-4-15+Katakasu,+Hakata+Ward,+Fukuoka,+812-0043,+Japan", 
@@ -338,7 +321,6 @@
                     },
                     {
                         name: "天王寺204 (Osaka)",
-                        // (v.7) Updated to YYYY
                         dates: "30 Dec 2025 - 3 Jan 2026",
                         address: "南河堀町10-3, 大阪市天王寺区",
                         mapLink: "https://www.google.com/maps/place/10-3+Minamikawahorich%C5%8D,+Tenn%C5%8Dji+Ward,+Osaka,+543-0054,+Japan", 
@@ -347,7 +329,6 @@
                     }
                 ],
                 dailyItinerary: [
-                    // (v.7) Updated to YYYY
                     { day: "Day 1 (27 Dec 2025): Fukuoka", items: [{ id: `item${Date.now()}`, time: "15:00", text: "Check-in ที่พัก (Phoenix inn)"}] },
                     { day: "Day 2 (28 Dec 2025): Fukuoka", items: [] },
                     { day: "Day 3 (29 Dec 2025): Fukuoka", items: [] },
@@ -371,7 +352,6 @@
                 ],
                 poiCatalog: [] 
             };
-            // (v.7) Add creator info only if user is logged in
             if (userDisplayName) {
                 const createdBy = { createdBy: userDisplayName };
                 initialData.expenses.forEach(i => Object.assign(i, createdBy));
@@ -383,7 +363,6 @@
         // --- Main UI Rendering Functions ---
         function renderUI(data) {
             if (!data) return;
-            // (v.7) Clear error on successful render
             displayError(null);
             const safeData = {
                 dailyItinerary: data.dailyItinerary || [],
@@ -406,7 +385,6 @@
             if (!container) return;
             container.innerHTML = flightInfo.map(info => `
                 <div class="mb-4">
-                    <!-- (v.5) Header color changed -->
                     <h4 class="font-semibold text-lg text-indigo-700">${info.title}</h4>
                     <ul class="list-disc list-inside text-gray-700">
                         ${info.flights.map(f => `<li>${f}</li>`).join('')}
@@ -420,7 +398,6 @@
             if (!container) return;
             container.innerHTML = accommodations.map(acc => `
                 <div class="mb-4">
-                    <!-- (v.5) Header color changed -->
                     <h4 class="font-semibold text-lg text-indigo-700">${acc.name}</h4>
                     <p class="text-sm text-gray-600">${acc.dates} | ${acc.address}</p>
                     <p class="text-sm text-gray-600">📍 ${acc.station}</p>
@@ -445,7 +422,6 @@
             
             container.innerHTML = itinerary.map((dayItem, index) => {
                 const timelineHtml = (dayItem.items || []).sort((a, b) => a.time.localeCompare(b.time)).map(item => {
-                    // (v.5) Removed createdBy
                     return `
                     <div class="timeline-item pb-4">
                         <div class="timeline-dot"></div>
@@ -471,7 +447,6 @@
 
                 const isOpen = openStates[dayItem.day] !== undefined ? openStates[dayItem.day] : (index === 0);
                 
-                // (v.7) Create <select> options for time
                 const hourOptions = Array.from({ length: 24 }, (_, i) => {
                     const hour = i.toString().padStart(2, '0');
                     return `<option value="${hour}">${hour}</option>`;
@@ -481,13 +456,10 @@
                 }).join('');
 
                 return `
-                <!-- (v.5) Added bg-slate-50 for contrast -->
                 <details ${isOpen ? 'open' : ''} class="mb-2 bg-slate-50 shadow-sm rounded-lg overflow-hidden border border-slate-200">
-                    <!-- (v.6) Added transition -->
                     <summary class="font-semibold p-4 cursor-pointer hover:bg-slate-100 transition-colors flex justify-between items-center gap-2">
                         
                         <div id="day-header-display-${index}" class="flex justify-between items-center flex-grow">
-                            <!-- (v.5) Header color changed -->
                             <span class="font-semibold text-lg text-indigo-700">${dayItem.day}</span>
                             <button onclick="window.app.toggleDayHeaderEdit(${index}, event, true)" 
                                     class="ml-2 p-2 rounded-full hover:bg-gray-200 flex-shrink-0">
@@ -498,7 +470,6 @@
                         <div id="day-header-edit-${index}" class="hidden flex justify-between items-center flex-grow gap-2">
                             <input type="text" id="day-header-input-${index}" value="${dayItem.day}" 
                                    class="font-semibold text-lg p-2 border border-gray-300 rounded-md flex-grow focus:border-blue-500 focus:ring-blue-500">
-                            <!-- (v.6) Added transition -->
                             <button onclick="window.app.updateDayHeader(${index})" 
                                     class="ml-2 px-3 py-1 bg-green-500 text-white text-sm rounded-md hover:bg-green-600 flex-shrink-0 transition-all duration-200 ease-in-out">บันทึก</button>
                             <button onclick="window.app.toggleDayHeaderEdit(${index}, event, false)" 
@@ -506,7 +477,6 @@
                         </div>
 
                     </summary>
-                    <!-- (v.5) Set to white for contrast with summary -->
                     <div class="p-4 border-t border-slate-200 bg-white">
                         <div class="mb-4">
                             ${timelineHtml || '<p class="text-gray-500 text-sm">ยังไม่มีกิจกรรมในวันนี้</p>'}
@@ -515,7 +485,6 @@
                         <div class="mt-4 pt-4 border-t">
                             <h4 class="font-semibold mb-2">เพิ่มกิจกรรมใหม่ในวันนี้</h4>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                <!-- (v.7) Time input changed to select dropdowns -->
                                 <div class="col-span-1 flex gap-2">
                                     <select id="item-hour-${index}" class="flex-grow p-2 border border-gray-300 rounded-md">
                                         ${hourOptions}
@@ -533,7 +502,6 @@
                                 </select>
                                 <button onclick="window.app.addPoiToText(${index})" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-sm">ใช้</button>
                             </div>
-                            <!-- (v.6) Button theme changed to indigo -->
                             <button id="add-item-btn-${index}" onclick="window.app.addDailyItem(${index})"
                                 class="mt-2 w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">
                                 + เพิ่มกิจกรรม
@@ -566,16 +534,11 @@
 
             sortedList.forEach(item => {
                 const isDone = item.done;
-                // (v.5) Removed createdBy
-
-                // (v.6) Added border-b for mobile clarity
-                // (v.7) Re-arranged buttons
                 list.innerHTML += `
                     <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md group border-b border-gray-100">
                         <div class="flex items-center flex-grow mr-2">
                             <span class="${isDone ? 'text-gray-500 line-through' : 'text-gray-800'}">${item.name}</span>
                             
-                            <!-- (v.7) Edit/Delete buttons moved here, appear on hover -->
                             <div class="flex-shrink-0 ml-3 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onclick="window.app.editChecklistItem('${item.id}')"
                                     class="text-blue-500 hover:text-blue-700 text-xs font-medium">แก้ไข</button>
@@ -584,7 +547,6 @@
                             </div>
                         </div>
 
-                        <!-- (v.7) Status button remains on the far right -->
                         <div class="flex-shrink-0">
                             <button onclick="window.app.toggleChecklistItem('${item.id}', ${!isDone})" 
                                     class="px-2 py-1 text-sm text-white rounded-md transition-all duration-200 ease-in-out
@@ -612,9 +574,6 @@
 
             let sum = 0;
             expenses.forEach(exp => {
-                // (v.5) Removed createdBy
-                
-                // (v.6) Added border-b for mobile clarity
                 list.innerHTML += `
                     <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md group border-b border-gray-100">
                         <div>
@@ -625,7 +584,6 @@
                                 ${exp.amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })} ${exp.currency}
                             </span>
                             
-                            <!-- (v.5) Edit/Delete Buttons -->
                             <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onclick="window.app.editExpenseItem('${exp.id}')"
                                     class="text-blue-500 hover:text-blue-700 text-xs font-medium">แก้ไข</button>
@@ -635,7 +593,6 @@
                         </div>
                     </li>
                 `;
-                // (v.7) Ensure currency is THB for summation, default to 0 if not
                 if (exp.currency === "THB") {
                     sum += (exp.amount || 0);
                 }
@@ -652,9 +609,6 @@
                 const notesHtml = poi.notes 
                     ? `<p class="text-sm text-gray-600 mt-1"><em>โน้ต: ${poi.notes}</em></p>` 
                     : '';
-                // (v.5) Removed createdBy
-
-                // (v.6) Added border-b for mobile clarity
                 list.innerHTML += `
                     <li class="p-2 border-b border-gray-100 hover:bg-gray-50 group">
                         <div class="flex justify-between items-center">
@@ -662,7 +616,6 @@
                             <a href="${poi.mapLink}" target="_blank" class="text-blue-600 hover:underline text-sm">แผนที่</a>
                         </div>
                         ${notesHtml}
-                        <!-- (v.5) Edit/Delete Buttons -->
                         <div class="flex gap-3 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onclick="window.app.editPOI('${poi.id}')" class="text-xs text-blue-500 hover:underline">แก้ไข</button>
                             <button onclick="window.app.removePOI('${poi.id}')" class="text-xs text-red-500 hover:underline">ลบ</button>
@@ -676,7 +629,6 @@
 
         async function updateItinerary(newItinerary) {
             try {
-                // (v.7) Use full path
                 const docRef = doc(db, docRefPath);
                 await updateDoc(docRef, { dailyItinerary: newItinerary });
             } catch (error) {
@@ -684,7 +636,6 @@
             }
         }
         
-        // (v.7) Helper to get doc ref
         function getTripDocRef() {
             return doc(db, docRefPath);
         }
@@ -719,7 +670,7 @@
 
             toggleDayHeaderEdit(dayIndex, null, false);
             
-            const oldItinerary = JSON.parse(JSON.stringify(appData.dailyItinerary)); // Deep copy for rollback
+            const oldItinerary = JSON.parse(JSON.stringify(appData.dailyItinerary)); 
 
             try {
                 const newItinerary = appData.dailyItinerary.map((day, index) => {
@@ -729,13 +680,11 @@
                     return day;
                 });
                 
-                // Optimistic UI update
                 appData.dailyItinerary[dayIndex].day = newTitle;
                 renderDailyItinerary(appData.dailyItinerary, appData.poiCatalog);
 
                 await updateItinerary(newItinerary);
             } catch (error) {
-                // Rollback if error
                 appData.dailyItinerary = oldItinerary;
                 renderDailyItinerary(appData.dailyItinerary, appData.poiCatalog);
                 displayError("Update Day Header Failed", error);
@@ -748,7 +697,6 @@
 
             currentEdit = { dayIndex, itemId, checklistId: null, expenseId: null, poiId: null };
             
-            // (v.7) Set dropdown values
             const [hour, minute] = item.time.split(':');
             document.getElementById(`item-hour-${dayIndex}`).value = hour || '09';
             document.getElementById(`item-minute-${dayIndex}`).value = minute || '00';
@@ -769,7 +717,6 @@
         function cancelEdit(dayIndex) {
             currentEdit = { dayIndex: null, itemId: null, checklistId: null, expenseId: null, poiId: null };
             
-            // (v.7) Reset dropdowns
             document.getElementById(`item-hour-${dayIndex}`).value = '09';
             document.getElementById(`item-minute-${dayIndex}`).value = '00';
             document.getElementById(`item-text-${dayIndex}`).value = '';
@@ -783,7 +730,6 @@
             const { dayIndex, itemId } = currentEdit;
             if (dayIndex === null || !itemId) return;
 
-            // (v.7) Get values from dropdowns
             const hourInput = document.getElementById(`item-hour-${dayIndex}`);
             const minuteInput = document.getElementById(`item-minute-${dayIndex}`);
             const textInput = document.getElementById(`item-text-${dayIndex}`);
@@ -796,7 +742,7 @@
                 return;
             }
             
-            cancelEdit(dayIndex); // Reset form *immediately*
+            cancelEdit(dayIndex); 
 
             const newItinerary = appData.dailyItinerary.map((day, index) => {
                 if (index === dayIndex) {
@@ -815,7 +761,6 @@
         }
 
         async function addDailyItem(dayIndex) {
-            // (v.7) Get values from dropdowns
             const hourInput = document.getElementById(`item-hour-${dayIndex}`);
             const minuteInput = document.getElementById(`item-minute-${dayIndex}`);
             const textInput = document.getElementById(`item-text-${dayIndex}`);
@@ -900,8 +845,7 @@
             }
         }
 
-        // --- EXPENSE FUNCTIONS (v.5 - Edit/Update) ---
-
+        // --- EXPENSE FUNCTIONS ---
         function resetExpenseForm() {
             document.getElementById('expense-name').value = '';
             document.getElementById('expense-amount').value = '';
@@ -998,8 +942,7 @@
             }
         }
         
-        // --- CHECKLIST FUNCTIONS (v.5 - Edit/Update) ---
-        
+        // --- CHECKLIST FUNCTIONS ---
         function resetChecklistForm() {
             document.getElementById('checklist-name').value = '';
             document.getElementById('add-checklist-btn').classList.remove('hidden');
@@ -1099,8 +1042,7 @@
             }
         }
 
-        // --- POI FUNCTIONS (v.5 - Edit/Update) ---
-        
+        // --- POI FUNCTIONS ---
         function resetPoiForm() {
             document.getElementById('poi-name').value = '';
             document.getElementById('poi-link').value = '';
@@ -1206,10 +1148,6 @@
         
         // --- (v.7) Gemini API Functions ---
         
-        /**
-         * Fetches a URL with exponential backoff for retries.
-         * (v.8) Updated retry logic
-         */
         const fetchWithRetry = async (url, options, retries = 3, delay = 1000) => {
             for (let i = 0; i < retries; i++) {
                 try {
@@ -1220,13 +1158,12 @@
                         await new Promise(res => setTimeout(res, delay));
                         delay *= 2; 
                     } else {
-                        // Don't retry for other client-side errors (e.g., 400, 403, 404)
                         console.error(`Client error ${response.status}. Not retrying.`);
-                        return response; // Return the error response
+                        return response; 
                     }
-                } catch (error) { // Network errors
+                } catch (error) { 
                     console.warn(`Attempt ${i + 1}/${retries}: Network error. Retrying in ${delay}ms...`, error);
-                    if (i === retries - 1) throw error; // Throw on last attempt
+                    if (i === retries - 1) throw error; 
                     await new Promise(res => setTimeout(res, delay));
                     delay *= 2;
                 }
@@ -1234,7 +1171,7 @@
             throw new Error('Failed to fetch after all retries.');
         };
 
-        // (v.10) Updated function
+        // (v.12) Updated AI function
         async function analyzeMapLink() {
             const linkInput = document.getElementById('poi-link');
             const nameInput = document.getElementById('poi-name');
@@ -1249,32 +1186,40 @@
                 return;
             }
             
-            if (!geminiApiKey && (typeof __app_id === 'undefined')) {
-                displayError("ไม่พบ API Key สำหรับ Gemini", "Please set geminiApiKey in the script.");
-                return;
+            // (v.11) Updated check to only validate geminiApiKey
+            if (!geminiApiKey) {
+                 // Check if the app is running in the intended environment which provides the key
+                const isCanvasEnvironment = typeof __app_id !== 'undefined';
+                if (!isCanvasEnvironment) {
+                    displayError('Gemini API Key is not set.', 'Please set the `geminiApiKey` variable in the script tag.');
+                    return;
+                }
             }
 
-            displayError(null); // Clear previous errors
+            displayError(null); 
             analyzeBtn.disabled = true;
             analyzeBtnText.classList.add('hidden');
             analyzeBtnSpinner.classList.remove('hidden');
 
             try {
-                // (v.10) Updated System Prompt: Removed tool enforcement, rely on model's grounding.
-                const systemPrompt = `You are an expert travel assistant.
-1. Your task is to extract information *only* from the Google Maps link provided by the user.
-2. You MUST find the location's official name and provide a brief, one-sentence description or note about it (e.g., "Ramen restaurant in Fukuoka", "Historic temple").
-3. You MUST respond ONLY with a valid JSON object string in the format: {"name": "Official Name", "notes": "One-sentence description"}.
-4. Do NOT include any text before or after the JSON object. Do not use markdown.`;
+                // (v.12) New System Prompt: Tell it WHAT to do (resolve URL), not HOW (don't search text)
+                const systemPrompt = `You are a location resolver.
+1. Your ONLY job is to resolve the provided Google Maps URL using your available web search tools.
+2. You MUST find the location's official name and a brief, one-sentence description.
+3. You MUST NOT search for the literal text of the URL string. You MUST resolve the URL to its destination to find the information.
+4. You MUST respond ONLY with a valid JSON object string in the format: {"name": "Official Name", "notes": "One-sentence description"}.
+5. Do NOT include any text before or after the JSON object. Do not use markdown (e.g., \`\`\`json).`;
 
                 const payload = {
                     contents: [{
-                        parts: [{ text: `Please analyze this Google Maps link: ${mapLink}` }]
+                        parts: [{ text: `Please resolve this Google Maps link: ${mapLink}` }]
                     }],
+                    // (v.12) Re-added 'tools' to "turn on the internet" for the model
+                    tools: [{ "google_search": {} }],
                     systemInstruction: {
                         parts: [{ text: systemPrompt }]
                     }
-                    // (v.10) Removed 'tools' and 'generationConfig' to let the model use its native grounding and respond with text.
+                    // (v.10) We parse the text response, so no responseSchema
                 };
                 
                 const response = await fetchWithRetry(geminiApiUrl, {
@@ -1298,11 +1243,9 @@
                     throw new Error('Invalid response structure from AI.');
                 }
                 
-                // (v.10) Parse the text response, which should be a JSON string
                 const rawText = result.candidates[0].content.parts[0].text;
                 let parsedJson;
                 try {
-                    // Find the JSON object within the text (in case of prefix/suffix)
                     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
                     if (!jsonMatch) throw new Error("No JSON object found in AI response.");
                     parsedJson = JSON.parse(jsonMatch[0]);
@@ -1313,7 +1256,7 @@
 
                 if (parsedJson.name) {
                     nameInput.value = parsedJson.name;
-                    notesInput.value = parsedJson.notes || ''; // Allow empty notes
+                    notesInput.value = parsedJson.notes || ''; 
                     
                     nameInput.classList.add('bg-green-100');
                     notesInput.classList.add('bg-green-100');
@@ -1356,7 +1299,6 @@
             editDailyItem,   
             updateDailyItem, 
             cancelEdit,
-            // (v.5) Added edit/update/cancel functions
             editChecklistItem,
             updateChecklistItem,
             resetChecklistForm,
@@ -1366,7 +1308,6 @@
             editPOI,
             updatePOI,
             resetPoiForm,
-            // (v.7) Added Gemini function
             analyzeMapLink
         };
 
@@ -1375,26 +1316,21 @@
 
     </script>
 </head>
-
-<!-- (v.5) Updated body background -->
 <body class="bg-slate-200 font-sans">
     
     <!-- Loading Screen -->
     <div id="loading-screen" class="flex items-center justify-center min-h-screen">
         <div class="flex flex-col items-center">
             <div class="loader"></div>
-            <!-- (v.6) Added pulse animation -->
             <p class="text-gray-600 mt-4 animate-pulse">กำลังโหลดแผนการเดินทาง...</p>
         </div>
     </div>
 
     <!-- Login Screen -->
     <div id="login-screen" class="hidden container mx-auto p-8 max-w-md mt-20 bg-white shadow-lg rounded-lg text-center">
-        <!-- (v.7) Image Removed -->
         
         <h1 class="text-3xl font-bold text-gray-900 mb-4">Bear Cat In FOK 2025</h1>
         <p class="text-gray-600 mb-6">กรุณาล็อกอินเพื่อเข้าใช้งานแผนการเดินทาง</p>
-        <!-- (v.6) Button theme changed to indigo -->
         <button onclick="window.app.signInWithGoogle()"
             class="w-full px-4 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center justify-center gap-2 transition-all duration-200 ease-in-out">
             <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039L38.485 13.85C34.609 10.323 29.723 8 24 8 12.954 8 4 16.954 4 28s8.954 20 20 20 20-8.954 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691c2.007-4.103 5.703-7.141 10.08-8.974L11.707 10.2C8.618 11.66 6.814 13.06 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-5.02-4.99C30.05 36.1 27.208 38 24 38c-3.882 0-7.23-2.023-9.117-5.034l-5.51 4.83C11.65 41.59 17.51 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.103 4.148-3.94 5.574l5.02 4.99C41.87 35.19 44 30.65 44 26c0-1.341-.138-2.65-.389-3.917z"/></svg>
@@ -1407,9 +1343,7 @@
 
         <header class="mb-4 bg-white shadow-sm rounded-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
             <div class="flex-grow">
-                <!-- (v.5) Header color changed -->
                 <h1 class="text-xl md:text-2xl font-bold text-indigo-700 leading-tight">Bear Cat In FOK 2025</h1>
-                <!-- (v.7) Updated to YYYY -->
                 <p class="text-xs md:text-sm text-gray-500 mt-1">ทริปญี่ปุ่น (Fukuoka → Osaka)<br class="md:hidden"> 27 Dec 2025 - 3 Jan 2026</p>
             </div>
             <div class="flex items-center gap-2 mt-2 md:mt-0 self-end md:self-auto">
@@ -1433,9 +1367,7 @@
             <div class="lg:col-span-2 space-y-6">
 
                 <!-- 1. Daily Itinerary -->
-                <!-- (v.7) Added card hover animation -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                    <!-- (v.5) Header color changed -->
                     <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">🗺️ แผนการเดินทางรายวัน</h2>
                     <div id="daily-itinerary-container" class="p-5 space-y-2">
                         <!-- Daily itinerary items will be rendered here -->
@@ -1448,9 +1380,7 @@
                 </div>
 
                 <!-- 2. Accommodation -->
-                <!-- (v.7) Added card hover animation -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                    <!-- (v.5) Header color changed -->
                     <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">🏨 ที่พักที่จองแล้ว</h2>
                     <div id="accommodation-container" class="p-5 divide-y divide-gray-200">
                         <!-- Accommodation info will be rendered here -->
@@ -1458,9 +1388,7 @@
                 </div>
 
                 <!-- 3. Flight Info -->
-                <!-- (v.7) Added card hover animation -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                    <!-- (v.5) Header color changed -->
                     <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">✈️ ข้อมูลเที่ยวบินหลัก</h2>
                     <div id="flight-info-container" class="p-5 divide-y divide-gray-200">
                         <!-- Flight info will be rendered here -->
@@ -1473,9 +1401,7 @@
             <div class="space-y-6">
 
                 <!-- 1. Checklist -->
-                <!-- (v.7) Added card hover animation -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                    <!-- (v.5) Header color changed -->
                     <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">📋 รายการที่ต้องทำ</h2>
                     <div class="p-5">
                         <ul id="checklist-list" class="space-y-1 mb-4">
@@ -1483,11 +1409,9 @@
                         </ul>
                         <p id="no-checklist" class="text-gray-500 text-sm hidden">ไม่มีรายการ</p>
 
-                        <!-- (v.5) Updated form for Edit/Update -->
                         <div class="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 border-t pt-4">
                             <input type="text" id="checklist-name" placeholder="เพิ่ม/แก้ไข รายการ"
                                 class="flex-grow p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
-                            <!-- (v.6) Button theme changed to indigo -->
                             <button id="add-checklist-btn" onclick="window.app.addChecklistItem()"
                                 class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">เพิ่ม</button>
                             <button id="update-checklist-btn" onclick="window.app.updateChecklistItem()"
@@ -1499,9 +1423,7 @@
                 </div>
 
                 <!-- 2. Expenses -->
-                <!-- (v.7) Added card hover animation -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                    <!-- (v.5) Header color changed -->
                     <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">💸 รายจ่าย</h2>
                     <div class="p-5">
                         <ul id="expenses-list" class="space-y-1 mb-4">
@@ -1513,13 +1435,11 @@
                             <h3 id="expenses-total" class="text-lg font-semibold text-right text-gray-800">ยอดรวม: 0.00 บาท</h3>
                         </div>
 
-                        <!-- (v.5) Updated form for Edit/Update -->
                         <div class="mt-4 space-y-2">
                             <input type="text" id="expense-name" placeholder="ชื่อรายการ"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
                             <input type="number" id="expense-amount" placeholder="จำนวนเงิน (บาท)"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
-                            <!-- (v.6) Button theme changed to indigo -->
                             <button id="add-expense-btn" onclick="window.app.addExpense()"
                                 class="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">บันทึกรายจ่าย</button>
                             <button id="update-expense-btn" onclick="window.app.updateExpenseItem()"
@@ -1531,22 +1451,18 @@
                 </div>
 
                 <!-- 3. POI Directory -->
-                <!-- (v.7) Added card hover animation -->
                 <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                    <!-- (v.5) Header color changed -->
                     <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">📍 ไดเรกทอรีสถานที่ (POI)</h2>
                     <div class="p-5">
                         <ul id="poi-list" class="space-y-3 mb-4 max-h-60 overflow-y-auto">
                             <!-- POI items here -->
                         </ul>
-                        <!-- (v.5) Updated form for Edit/Update -->
                         <div class="mt-4 space-y-2 border-t pt-4">
                             <h3 class="font-semibold">เพิ่ม / แก้ไข สถานที่</h3>
                             
                             <input type="text" id="poi-link" placeholder="วางลิงก์ Google Maps (สั้น/ยาว) ที่นี่"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
                             
-                            <!-- (v.7) AI Analyze Button -->
                             <button id="analyze-poi-btn" onclick="window.app.analyzeMapLink()" 
                                 class="w-full px-3 py-2 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md hover:bg-yellow-200 text-sm flex items-center justify-center gap-2 transition-all duration-200 ease-in-out disabled:opacity-50">
                                 <span id="analyze-poi-btn-text">⚡ วิเคราะห์ลิงก์ด้วย AI</span>
@@ -1559,7 +1475,6 @@
                             <input type="text" id="poi-notes" placeholder="โน้ตย่อ (จะขึ้นเองเมื่อวิเคราะห์)"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
                             
-                            <!-- (v.6) Button theme changed to indigo -->
                             <button id="add-poi-btn" onclick="window.app.addPOI()"
                                 class="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">เพิ่มเข้าไดเรกทอรี</button>
                             <button id="update-poi-btn" onclick="window.app.updatePOI()"
