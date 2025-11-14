@@ -115,8 +115,9 @@
             poiId: null
         };
         
-        // --- (v.7) Gemini API Configuration ---
-        // (v.13) Using the key provided by the user in the last file context.
+        // --- (v.15) Re-introducing Gemini API Configuration ---
+        // (v.15) Using the key provided by the user in the last file context.
+        // This key MUST be set and configured in Google Cloud (Billing, Referrers)
         const geminiApiKey = "AIzaSyAfkZW59UlXSDndOkSFuTIp9rU_X4SjRcQ"; 
         
         // (v.8) CORRECTED URL
@@ -179,10 +180,8 @@
         // --- Firebase Initialization and Auth ---
         async function initFirebaseAndAuth() {
             try {
-                if (firebaseConfig.apiKey === "YOUR_API_KEY") {
-                     displayError("Firebase Config is missing.", "Please update the firebaseConfig object in the script.");
-                     document.getElementById('loading-screen').classList.add('hidden');
-                     return;
+                if (firebaseConfig.apiKey === "AIzaSyDzYQTm0V6yBcOCyBGJxD65AoGRHKEOZng" && typeof __firebase_config === 'undefined') {
+                    console.warn("Using fallback Firebase config. This is expected if running on gitlab.io");
                 }
                 
                 app = initializeApp(firebaseConfig);
@@ -214,14 +213,16 @@
 
                         await loadDataAndRender();
                     } else {
-                        userId = null;
-                        userDisplayName = null;
-                        if (unsubscribeTrip) unsubscribeTrip(); 
+                        if (typeof __initial_auth_token === 'undefined' || !__initial_auth_token) {
+                            userId = null;
+                            userDisplayName = null;
+                            if (unsubscribeTrip) unsubscribeTrip(); 
 
-                        mainApp.classList.add('hidden');
-                        loginScreen.classList.remove('hidden');
-                        userDisplay.textContent = '';
-                        logoutButton.classList.add('hidden');
+                            mainApp.classList.add('hidden');
+                            loginScreen.classList.remove('hidden');
+                            userDisplay.textContent = '';
+                            logoutButton.classList.add('hidden');
+                        }
                     }
                     
                     loadingScreen.classList.add('hidden');
@@ -1141,7 +1142,7 @@
             }
         }
         
-        // --- (v.7) Gemini API Functions ---
+        // --- (v.15) Gemini API Function with Robust JSON Parsing ---
         
         const fetchWithRetry = async (url, options, retries = 3, delay = 1000) => {
             for (let i = 0; i < retries; i++) {
@@ -1166,11 +1167,11 @@
             throw new Error('Failed to fetch after all retries.');
         };
 
-        // (v.13) Simplified AI function (as requested)
+        // (v.15) Re-instating the v.12 AI logic, but with smarter JSON parsing
         async function analyzeMapLink() {
             const linkInput = document.getElementById('poi-link');
             const nameInput = document.getElementById('poi-name');
-            const notesInput = document.getElementById('poi-notes'); // We still need this to clear it
+            const notesInput = document.getElementById('poi-notes');
             const analyzeBtn = document.getElementById('analyze-poi-btn');
             const analyzeBtnText = document.getElementById('analyze-poi-btn-text');
             const analyzeBtnSpinner = document.getElementById('analyze-poi-btn-spinner');
@@ -1193,26 +1194,25 @@
             analyzeBtn.disabled = true;
             analyzeBtnText.classList.add('hidden');
             analyzeBtnSpinner.classList.remove('hidden');
-            
-            // (v.13) Clear notes field immediately
-            notesInput.value = '';
 
             try {
-                // (v.13) Simplified System Prompt: Ask *only* for the name as text.
+                // (v.12/v.15) Using the robust prompt to get JSON
                 const systemPrompt = `You are a location resolver.
 1. Your ONLY job is to resolve the provided Google Maps URL using your available web search tools.
-2. You MUST find the location's official name.
-3. You MUST respond ONLY with the location's official name as plain text.
-4. Do NOT include any other text, descriptions, apologies, or markdown (e.g., \`\`\`). Just the name.`;
+2. You MUST find the location's official name and a brief, one-sentence description.
+3. You MUST NOT search for the literal text of the URL string. You MUST resolve the URL to its destination to find the information.
+4. You MUST respond ONLY with a valid JSON object string in the format: {"name": "Official Name", "notes": "One-sentence description"}.
+5. Do NOT include any text before or after the JSON object. Do not use markdown (e.g., \`\`\`json).`;
 
                 const payload = {
                     contents: [{
-                        parts: [{ text: `Please resolve this Google Maps link and return ONLY the official name: ${mapLink}` }]
+                        parts: [{ text: `Please resolve this Google Maps link: ${mapLink}` }]
                     }],
                     tools: [{ "google_search": {} }], // Keep the tool to "turn on the internet"
                     systemInstruction: {
                         parts: [{ text: systemPrompt }]
                     }
+                    // We will parse the text response, so no responseSchema
                 };
                 
                 const response = await fetchWithRetry(geminiApiUrl, {
@@ -1236,24 +1236,38 @@
                     throw new Error('Invalid response structure from AI.');
                 }
                 
-                // (v.13) The response is plain text, not JSON
-                const locationName = result.candidates[0].content.parts[0].text.trim();
+                const rawText = result.candidates[0].content.parts[0].text;
+                let parsedJson;
+                
+                // (v.15) THE REAL FIX: Extract the JSON from the text, no matter what else the AI says
+                try {
+                    const jsonMatch = rawText.match(/\{[\s\S]*\}/); // Find the first { ... } block
+                    if (!jsonMatch) {
+                        console.error("No JSON object found in AI response:", rawText);
+                        throw new Error("AI did not return a valid JSON object.");
+                    }
+                    
+                    const jsonString = jsonMatch[0];
+                    parsedJson = JSON.parse(jsonString);
 
-                // (v.13) Basic validation
-                if (locationName && locationName.length > 2 && locationName.length < 150) {
-                    nameInput.value = locationName;
+                } catch (parseError) {
+                    console.error("Failed to parse JSON from AI response:", rawText);
+                    throw new Error("AI returned invalid JSON format.");
+                }
+
+                // (v.15) Now we check the *parsed* JSON
+                if (parsedJson.name) {
+                    nameInput.value = parsedJson.name;
+                    notesInput.value = parsedJson.notes || ''; // Use notes if provided
                     
                     nameInput.classList.add('bg-green-100');
+                    notesInput.classList.add('bg-green-100');
                     setTimeout(() => {
                         nameInput.classList.remove('bg-green-100');
+                        notesInput.classList.remove('bg-green-100');
                     }, 1500);
-                    
-                    // (v.13) Focus on the notes input so user can type next
-                    notesInput.focus();
-
                 } else {
-                    console.error("AI returned invalid text:", locationName);
-                    throw new Error('AI returned an invalid name.');
+                    throw new Error('AI response did not contain a "name" field.');
                 }
 
             } catch (error) {
@@ -1451,6 +1465,7 @@
                             <input type="text" id="poi-link" placeholder="วางลิงก์ Google Maps (สั้น/ยาว) ที่นี่"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
                             
+                            <!-- (v.15) Re-instated AI button text -->
                             <button id="analyze-poi-btn" onclick="window.app.analyzeMapLink()" 
                                 class="w-full px-3 py-2 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md hover:bg-yellow-200 text-sm flex items-center justify-center gap-2 transition-all duration-200 ease-in-out disabled:opacity-50">
                                 <span id="analyze-poi-btn-text">⚡ วิเคราะห์ลิงก์ด้วย AI</span>
@@ -1460,7 +1475,7 @@
                             <input type="text" id="poi-name" placeholder="ชื่อสถานที่ (จะขึ้นเองเมื่อวิเคราะห์)"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 bg-gray-50">
                             
-                            <input type="text" id="poi-notes" placeholder="โน้ตย่อ (พิมพ์เพิ่มเอง)"
+                            <input type="text" id="poi-notes" placeholder="โน้ตย่อ (จะขึ้นเองเมื่อวิเคราะห์)"
                                 class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
                             
                             <button id="add-poi-btn" onclick="window.app.addPOI()"
