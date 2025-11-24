@@ -190,7 +190,6 @@
             }).join('');
         }
 
-        // --- FIXED: Added Notes Rendering Here ---
         function renderPOI(list) {
             document.getElementById('poi-list').innerHTML = list.map(p => `
                 <li class="p-3 bg-white border border-slate-100 rounded-lg shadow-sm flex justify-between items-start group">
@@ -364,7 +363,17 @@
             document.getElementById('expenses-total').textContent = `${sum.toLocaleString()} ฿`;
             document.getElementById('no-expenses').classList.toggle('hidden', list.length>0);
         }
-        function renderAccommodations(list) { document.getElementById('accommodation-container').innerHTML = list.map(a=>`<div class="p-3 bg-slate-50 rounded border border-slate-100 mb-2"><h4 class="font-bold text-slate-700">${a.name}</h4><p class="text-xs text-slate-500">${a.dates}</p></div>`).join(''); }
+        
+        // --- FIXED: Accommodations Link Added ---
+        function renderAccommodations(list) {
+            document.getElementById('accommodation-container').innerHTML = list.map(a => `
+                <div class="p-3 bg-slate-50 rounded border border-slate-100 mb-2">
+                    <h4 class="font-bold text-slate-700">${a.name}</h4>
+                    <p class="text-xs text-slate-500 mb-2">${a.dates}</p>
+                    ${a.mapLink ? `<a href="${a.mapLink}" target="_blank" class="text-xs text-brand-500 hover:underline flex items-center gap-1">📍 Google Maps</a>` : ''}
+                </div>`).join('');
+        }
+        
         function renderFlights(list) { document.getElementById('flight-info-container').innerHTML = list.map(f=>`<div class="p-3 bg-slate-50 rounded border border-slate-100 mb-2"><h4 class="font-bold text-brand-700 text-sm">${f.title}</h4><div class="text-xs text-slate-600 mt-1">${f.flights.join('<br>')}</div></div>`).join(''); }
 
         async function addCheck() { const n=document.getElementById('checklist-name').value.trim(); if(n) { await updateDoc(doc(db, docRefPath), { checklist: arrayUnion({id:`c${Date.now()}`, name:n, done:false}) }); document.getElementById('checklist-name').value=''; } }
