@@ -57,7 +57,7 @@
             if (!btn) return;
             if (isLoading) {
                 btn.dataset.originalText = btn.innerHTML;
-                btn.innerHTML = `<span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>Wait...`;
+                btn.innerHTML = `<span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>`;
                 btn.disabled = true; btn.classList.add('opacity-70', 'cursor-not-allowed');
             } else {
                 btn.innerHTML = btn.dataset.originalText || 'บันทึก';
@@ -72,6 +72,11 @@
                 return `<a href="${fullUrl}" target="_blank" class="text-brand-600 underline">${url}</a>`;
             });
         }
+
+        // --- Standard Edit/Delete Icon SVG ---
+        const iconEdit = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>`;
+        const iconTrash = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
+        const iconClose = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
 
         async function initFirebase() {
             try {
@@ -126,15 +131,15 @@
                 const itemsHtml = (day.items || []).map(item => `
                     <div class="timeline-item">
                         <div class="timeline-dot"></div>
-                        <div class="flex flex-col sm:flex-row gap-2">
+                        <div class="flex flex-col sm:flex-row gap-2 relative group">
                             <span class="font-mono font-bold text-brand-600 text-xs bg-brand-50 px-2 py-0.5 rounded self-start">${item.time}</span>
-                            <div class="flex-grow min-w-0 text-sm sm:text-base text-slate-700 break-words">
+                            <div class="flex-grow min-w-0 text-sm sm:text-base text-slate-700 break-words pr-16 sm:pr-0">
                                 ${item.text ? `<p>${linkify(item.text)}</p>` : ''}
                                 ${item.poi ? `<a href="${item.poi.mapLink}" target="_blank" class="inline-flex items-center gap-1 mt-1 text-xs text-brand-600 bg-brand-50 px-2 py-1 rounded">📍 ${item.poi.name}</a>` : ''}
                             </div>
-                            <div class="flex gap-3 self-end sm:self-start opacity-100 sm:opacity-0 hover:opacity-100 transition-opacity">
-                                <button onclick="window.app.editItem(${idx}, '${item.id}')" class="text-slate-400 hover:text-brand-600">✏️</button>
-                                <button onclick="window.app.removeItem(${idx}, '${item.id}')" class="text-slate-400 hover:text-red-500">🗑️</button>
+                            <div class="flex gap-1 absolute right-0 top-0 sm:static sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-white sm:bg-transparent pl-2">
+                                <button onclick="window.app.editItem(${idx}, '${item.id}')" class="p-2 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded-full transition-colors">${iconEdit}</button>
+                                <button onclick="window.app.removeItem(${idx}, '${item.id}')" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">${iconTrash}</button>
                             </div>
                         </div>
                     </div>`).join('');
@@ -155,31 +160,30 @@
                             <button onclick="window.app.toggleDayEdit(${idx}, false)" class="px-2 bg-slate-300 rounded text-xs">✕</button>
                         </div>
                         <div class="flex items-center gap-1 flex-shrink-0">
-                            <button onclick="window.app.toggleDayEdit(${idx}, true, event)" class="p-1.5 text-slate-300 hover:text-brand-600 transition-colors">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
-                            </button>
-                            <button onclick="window.app.removeDay(${idx}, event)" class="p-1.5 text-slate-300 hover:text-red-500 transition-colors mr-1">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
+                            <button onclick="window.app.toggleDayEdit(${idx}, true, event)" class="p-1.5 text-slate-300 hover:text-brand-600 transition-colors">${iconEdit}</button>
+                            <button onclick="window.app.removeDay(${idx}, event)" class="p-1.5 text-slate-300 hover:text-red-500 transition-colors mr-1">${iconTrash}</button>
                             <span class="arrow-icon text-slate-300">▼</span>
                         </div>
                     </summary>
                     <div class="p-4 border-t border-slate-50 bg-white">
                         <div class="space-y-4 mb-4">${itemsHtml || '<div class="text-center text-slate-300 text-sm italic py-2">ว่างเปล่า</div>'}</div>
-                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                            <div class="flex gap-2 mb-2">
-                                <div class="flex bg-white border border-slate-200 rounded px-1 h-9 items-center">
+                        
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex flex-col gap-2">
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <div class="flex bg-white border border-slate-200 rounded px-1 h-9 items-center sm:w-auto w-full justify-center">
                                     <select id="h-${idx}" class="bg-transparent text-sm outline-none">${Array.from({length:24},(_,i)=>`<option>${String(i).padStart(2,'0')}</option>`).join('')}</select>
                                     <span class="text-slate-300 mx-1">:</span>
                                     <select id="m-${idx}" class="bg-transparent text-sm outline-none">${Array.from({length:12},(_,i)=>`<option>${String(i*5).padStart(2,'0')}</option>`).join('')}</select>
                                 </div>
                                 <input id="t-${idx}" type="text" placeholder="ทำอะไร..." class="flex-grow border border-slate-200 rounded px-2 text-sm h-9">
                             </div>
+                            
+                            <select id="p-${idx}" class="w-full border border-slate-200 rounded text-sm h-9 bg-white px-2"><option value="">- สถานที่ (Optional) -</option>${poiOpts}</select>
+                            
                             <div class="flex gap-2">
-                                <select id="p-${idx}" class="flex-grow border border-slate-200 rounded text-sm h-9 bg-white"><option value="">- สถานที่ -</option>${poiOpts}</select>
-                                <button id="btn-add-${idx}" onclick="window.app.addItem(${idx})" class="px-4 bg-brand-600 text-white rounded text-sm h-9 shadow-sm hover:bg-brand-700">+ เพิ่ม</button>
-                                <button id="btn-save-${idx}" onclick="window.app.saveItem(${idx})" class="hidden px-4 bg-green-500 text-white rounded text-sm h-9">บันทึก</button>
-                                <button id="btn-cancel-${idx}" onclick="window.app.cancelEditItem(${idx})" class="hidden px-3 bg-slate-300 text-white rounded text-sm h-9">✕</button>
+                                <button id="btn-add-${idx}" onclick="window.app.addItem(${idx})" class="w-full sm:w-auto px-6 bg-brand-600 text-white rounded text-sm h-9 shadow-sm hover:bg-brand-700 transition-colors font-medium">+ เพิ่ม</button>
+                                <button id="btn-save-${idx}" onclick="window.app.saveItem(${idx})" class="hidden w-full sm:w-auto px-6 bg-green-500 text-white rounded text-sm h-9 shadow-sm">บันทึก</button>
+                                <button id="btn-cancel-${idx}" onclick="window.app.cancelEditItem(${idx})" class="hidden w-full sm:w-auto px-4 bg-slate-300 text-white rounded text-sm h-9">ยกเลิก</button>
                             </div>
                         </div>
                     </div>
@@ -194,22 +198,18 @@
                         <div class="font-medium text-slate-800 text-sm truncate">${p.name}</div>
                         <a href="${p.mapLink}" target="_blank" class="text-xs text-brand-500 hover:underline flex items-center gap-1 mt-1">📍 Google Maps</a>
                     </div>
-                    <div class="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100">
-                        <button onclick="window.app.editPOI('${p.id}')" class="text-slate-300 hover:text-brand-600">✏️</button>
-                        <button onclick="window.app.removePOI('${p.id}')" class="text-slate-300 hover:text-red-500">🗑️</button>
+                    <div class="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="window.app.editPOI('${p.id}')" class="p-1.5 text-slate-300 hover:text-brand-600 hover:bg-slate-50 rounded-full transition-colors">${iconEdit}</button>
+                        <button onclick="window.app.removePOI('${p.id}')" class="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">${iconTrash}</button>
                     </div>
                 </li>`).join('');
         }
         
-        // --- Fix 3: POI Logic ---
         async function addPOI() {
             const name = document.getElementById('poi-name').value.trim();
             const link = document.getElementById('poi-link').value.trim();
             const notes = document.getElementById('poi-notes').value.trim();
-            
-            // Validate BEFORE setting loading state
             if (!name || !link) { alert("กรุณากรอกชื่อและลิงก์ Google Maps"); return; }
-            
             setLoading('add-poi-btn', true);
             try {
                 const newPOI = { id: `poi${Date.now()}`, name, mapLink: link, notes };
@@ -218,11 +218,7 @@
                 document.getElementById('poi-link').value = ''; 
                 document.getElementById('poi-notes').value = '';
                 togglePoiForm(false);
-            } catch (e) { 
-                console.error(e); alert("เกิดข้อผิดพลาดในการบันทึก"); 
-            } finally { 
-                setLoading('add-poi-btn', false); 
-            }
+            } catch (e) { console.error(e); alert("เกิดข้อผิดพลาด"); } finally { setLoading('add-poi-btn', false); }
         }
         
         async function updatePOI() {
@@ -312,6 +308,8 @@
             document.getElementById(`btn-add-${dayIdx}`).classList.add('hidden');
             document.getElementById(`btn-save-${dayIdx}`).classList.remove('hidden');
             document.getElementById(`btn-cancel-${dayIdx}`).classList.remove('hidden');
+            // Scroll to form
+            document.getElementById(`t-${dayIdx}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
         function cancelEditItem(idx) {
             document.getElementById(`t-${idx}`).value=''; document.getElementById(`p-${idx}`).value='';
@@ -343,10 +341,11 @@
         // Render Helpers (Simplified)
         function renderChecklist(list) {
             const el = document.getElementById('checklist-list');
+            // Fix 2: Remove line-through, keep opacity
             el.innerHTML = list.sort((a,b)=>a.done-b.done).map(c => `
-                <li class="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-lg mb-2">
-                    <span onclick="window.app.toggleCheck('${c.id}', ${!c.done})" class="${c.done?'opacity-50 line-through text-slate-400':'text-slate-700'} cursor-pointer select-none flex-grow">${c.name}</span>
-                    <button onclick="window.app.removeCheck('${c.id}')" class="text-slate-300 hover:text-red-500">✕</button>
+                <li class="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-lg mb-2 group">
+                    <span onclick="window.app.toggleCheck('${c.id}', ${!c.done})" class="${c.done?'opacity-50 text-slate-400':'text-slate-700'} cursor-pointer select-none flex-grow transition-opacity">${c.name}</span>
+                    <button onclick="window.app.removeCheck('${c.id}')" class="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100">${iconClose}</button>
                 </li>`).join('');
             document.getElementById('no-checklist').classList.toggle('hidden', list.length>0);
         }
@@ -355,7 +354,14 @@
             let sum = 0;
             el.innerHTML = list.map(e => {
                 if(e.currency==='THB') sum+=e.amount;
-                return `<li class="flex justify-between p-3 bg-white border border-slate-100 rounded-lg mb-2"><span class="text-slate-700">${e.name}</span><div class="flex gap-3"><span class="font-bold">${e.amount.toLocaleString()}</span><button onclick="window.app.removeExp('${e.id}')" class="text-slate-300 hover:text-red-500">✕</button></div></li>`;
+                return `
+                <li class="flex justify-between p-3 bg-white border border-slate-100 rounded-lg mb-2 group">
+                    <span class="text-slate-700 font-medium">${e.name}</span>
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold text-slate-800">${e.amount.toLocaleString()}</span>
+                        <button onclick="window.app.removeExp('${e.id}')" class="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100">${iconClose}</button>
+                    </div>
+                </li>`;
             }).join('');
             document.getElementById('expenses-total').textContent = `${sum.toLocaleString()} ฿`;
             document.getElementById('no-expenses').classList.toggle('hidden', list.length>0);
@@ -428,8 +434,8 @@
                         </div>
                         <div class="flex gap-2 justify-end mt-2">
                             <button id="cancel-poi-btn" onclick="window.app.togglePoiForm(false)" class="text-slate-500 text-xs px-3">ยกเลิก</button>
-                            <button id="add-poi-btn" onclick="window.app.addPOI()" class="px-4 py-1.5 bg-brand-600 text-white rounded shadow-sm text-xs font-medium">บันทึก</button>
-                            <button id="update-poi-btn" onclick="window.app.updatePOI()" class="hidden px-4 py-1.5 bg-green-500 text-white rounded shadow-sm text-xs font-medium">แก้ไข</button>
+                            <button id="add-poi-btn" onclick="window.app.addPOI()" class="w-full sm:w-auto px-6 py-1.5 bg-brand-600 text-white rounded shadow-sm text-xs font-medium">บันทึก</button>
+                            <button id="update-poi-btn" onclick="window.app.updatePOI()" class="hidden w-full sm:w-auto px-6 py-1.5 bg-green-500 text-white rounded shadow-sm text-xs font-medium">แก้ไข</button>
                         </div>
                     </div>
                 </div>
