@@ -73,7 +73,6 @@
             });
         }
 
-        // --- Standard Edit/Delete Icon SVG ---
         const iconEdit = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>`;
         const iconTrash = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
         const iconClose = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
@@ -191,14 +190,16 @@
             }).join('');
         }
 
+        // --- FIXED: Added Notes Rendering Here ---
         function renderPOI(list) {
             document.getElementById('poi-list').innerHTML = list.map(p => `
                 <li class="p-3 bg-white border border-slate-100 rounded-lg shadow-sm flex justify-between items-start group">
                     <div class="min-w-0 pr-2">
                         <div class="font-medium text-slate-800 text-sm truncate">${p.name}</div>
-                        <a href="${p.mapLink}" target="_blank" class="text-xs text-brand-500 hover:underline flex items-center gap-1 mt-1">📍 Google Maps</a>
+                        ${p.notes ? `<div class="text-xs text-slate-500 mt-1 line-clamp-2">${p.notes}</div>` : ''}
+                        <a href="${p.mapLink}" target="_blank" class="text-xs text-brand-500 hover:underline flex items-center gap-1 mt-2">📍 Google Maps</a>
                     </div>
-                    <div class="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div class="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                         <button onclick="window.app.editPOI('${p.id}')" class="p-1.5 text-slate-300 hover:text-brand-600 hover:bg-slate-50 rounded-full transition-colors">${iconEdit}</button>
                         <button onclick="window.app.removePOI('${p.id}')" class="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">${iconTrash}</button>
                     </div>
@@ -308,7 +309,6 @@
             document.getElementById(`btn-add-${dayIdx}`).classList.add('hidden');
             document.getElementById(`btn-save-${dayIdx}`).classList.remove('hidden');
             document.getElementById(`btn-cancel-${dayIdx}`).classList.remove('hidden');
-            // Scroll to form
             document.getElementById(`t-${dayIdx}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
         function cancelEditItem(idx) {
@@ -338,10 +338,8 @@
             await updateDoc(doc(db, docRefPath), { dailyItinerary: newItin });
         }
 
-        // Render Helpers (Simplified)
         function renderChecklist(list) {
             const el = document.getElementById('checklist-list');
-            // Fix 2: Remove line-through, keep opacity
             el.innerHTML = list.sort((a,b)=>a.done-b.done).map(c => `
                 <li class="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-lg mb-2 group">
                     <span onclick="window.app.toggleCheck('${c.id}', ${!c.done})" class="${c.done?'opacity-50 text-slate-400':'text-slate-700'} cursor-pointer select-none flex-grow transition-opacity">${c.name}</span>
@@ -369,7 +367,6 @@
         function renderAccommodations(list) { document.getElementById('accommodation-container').innerHTML = list.map(a=>`<div class="p-3 bg-slate-50 rounded border border-slate-100 mb-2"><h4 class="font-bold text-slate-700">${a.name}</h4><p class="text-xs text-slate-500">${a.dates}</p></div>`).join(''); }
         function renderFlights(list) { document.getElementById('flight-info-container').innerHTML = list.map(f=>`<div class="p-3 bg-slate-50 rounded border border-slate-100 mb-2"><h4 class="font-bold text-brand-700 text-sm">${f.title}</h4><div class="text-xs text-slate-600 mt-1">${f.flights.join('<br>')}</div></div>`).join(''); }
 
-        // Helper Actions
         async function addCheck() { const n=document.getElementById('checklist-name').value.trim(); if(n) { await updateDoc(doc(db, docRefPath), { checklist: arrayUnion({id:`c${Date.now()}`, name:n, done:false}) }); document.getElementById('checklist-name').value=''; } }
         async function toggleCheck(id, done) { const l = appData.checklist.map(c=>c.id===id?{...c, done}:c); await updateDoc(doc(db, docRefPath), { checklist: l }); }
         async function removeCheck(id) { await updateDoc(doc(db, docRefPath), { checklist: appData.checklist.filter(c=>c.id!==id) }); }
