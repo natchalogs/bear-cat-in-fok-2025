@@ -1,111 +1,124 @@
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bear Cat In FOK 2025</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', 'Noto Sans Thai', sans-serif;
-            background-color: #e2e8f0; /* bg-slate-200 */
+            background-color: #f8fafc; /* slate-50 */
+            color: #1e293b; /* slate-800 */
         }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Details & Summary Styling */
         details summary {
-            list-style: none; 
+            list-style: none;
             position: relative;
+            transition: all 0.3s ease;
         }
         details summary::-webkit-details-marker {
             display: none;
         }
-        
-        details summary.summary-with-arrow::before {
-            content: '►';
+        details summary.summary-with-arrow::after {
+            content: '';
             position: absolute;
-            left: 1rem; 
+            right: 1.5rem;
             top: 50%;
-            transform: translateY(-50%) rotate(0deg);
-            transition: transform 0.2s;
-            font-size: 0.8em;
-            color: #4338ca; /* indigo-700 */
+            width: 10px;
+            height: 10px;
+            border-right: 2px solid #6366f1; /* indigo-500 */
+            border-bottom: 2px solid #6366f1;
+            transform: translateY(-60%) rotate(45deg);
+            transition: transform 0.3s ease;
         }
-        details[open] summary.summary-with-arrow::before {
-            transform: translateY(-50%) rotate(90deg);
+        details[open] summary.summary-with-arrow::after {
+            transform: translateY(-30%) rotate(225deg);
         }
-        .summary-with-arrow {
-            padding-left: 2.5rem; 
-        }
-
-
+        
+        /* Timeline Styling */
         .timeline-item {
             position: relative;
-            padding-left: 1.5rem;
+            padding-left: 2rem;
+            padding-bottom: 2rem;
+        }
+        .timeline-item:last-child {
+            padding-bottom: 0;
         }
         .timeline-item::before {
             content: '';
             position: absolute;
-            left: 0.25rem;
-            top: 0;
-            bottom: 0;
+            left: 7px;
+            top: 10px;
+            bottom: -10px;
             width: 2px;
-            background-color: #e5e7eb;
-        }
-        .timeline-item:first-child::before {
-            top: 0.5rem;
+            background: #e2e8f0; /* slate-200 */
         }
         .timeline-item:last-child::before {
-            bottom: 0.5rem;
+            display: none;
         }
         .timeline-dot {
             position: absolute;
             left: 0;
-            top: 0.5rem;
-            width: 0.625rem;
-            height: 0.625rem;
-            background-color: #4f46e5; /* indigo-600 */
-            border-radius: 9999px;
-            border: 2px solid white;
-        }
-        .loader {
-            border: 4px solid #f3f3f3; 
-            border-top: 4px solid #4f46e5; /* indigo-600 */
+            top: 6px;
+            width: 16px;
+            height: 16px;
+            background-color: #6366f1; /* indigo-500 */
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+            border: 3px solid #fff;
+            box-shadow: 0 0 0 2px #e0e7ff; /* indigo-100 */
+            z-index: 10;
+        }
+
+        /* Loader */
+        .loader {
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #6366f1;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s cubic-bezier(0.55, 0.055, 0.675, 0.19) infinite;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        .animate-pulse {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        /* (v.13) This class is no longer used, but kept for safety */
-        .poi-spinner {
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-left-color: #ffffff;
-            border-radius: 50%;
-            width: 1rem;
-            height: 1rem;
-            animation: spin 1s linear infinite;
-        }
-        
+
+        /* Links */
         .itinerary-link {
-            color: #4f46e5; /* indigo-600 */
-            text-decoration: underline;
-            word-break: break-all; 
+            color: #4f46e5;
+            text-decoration: none;
+            border-bottom: 1px dotted #4f46e5;
+            transition: all 0.2s;
         }
         .itinerary-link:hover {
-            color: #3730a3; /* indigo-800 */
+            color: #4338ca;
+            border-bottom: 1px solid #4338ca;
         }
 
+        /* Glassmorphism for Modal/Login */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
     </style>
     <script type="module">
         // Firebase Imports
@@ -116,8 +129,8 @@
             GoogleAuthProvider,
             signInWithPopup,
             signOut,
-            signInWithCustomToken, 
-            signInAnonymously      
+            signInWithCustomToken,
+            signInAnonymously
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import {
             getFirestore,
@@ -138,25 +151,20 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const tripDocId = `mhee-maew-trip-2025`; 
         const docRefPath = `/artifacts/${appId}/public/data/tripPlans/${tripDocId}`;
-
         let appData = null; 
         let unsubscribeTrip = null; 
         
         let currentEdit = {
             dayIndex: null, itemId: null,
-            checklistId: null,          
-            expenseId: null,            
-            poiId: null                 
+            checklistId: null,
+            expenseId: null,
+            poiId: null
         };
-        
-        // --- (v.13) REMOVED Gemini API Configuration ---
 
         // --- Firebase Config ---
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config)
             : {
-                // (v.14) --- ADDING YOUR REAL FIREBASE CONFIG AS FALLBACK ---
-                // This will make it work on gitlab.io
                 apiKey: "AIzaSyDzYQTm0V6yBcOCyBGJxD65AoGRHKEOZng",
                 authDomain: "bear-cat-in-fok-2025.firebaseapp.com",
                 projectId: "bear-cat-in-fok-2025",
@@ -164,7 +172,6 @@
                 messagingSenderId: "178010604106",
                 appId: "1:178010604106:web:2dc3d30600b7a8d7769cb3",
                 measurementId: "G-KDSLTNV0MJ"
-                // --- END OF YOUR CONFIG ---
             };
 
         // --- Tailwind Configuration ---
@@ -175,11 +182,15 @@
                         sans: ['Inter', 'Noto Sans Thai', 'sans-serif'],
                     },
                     colors: {
-                        indigo: {
+                        brand: {
                             50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe',
                             300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1',
                             600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81',
                         },
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'glow': '0 0 15px rgba(99, 102, 241, 0.3)',
                     }
                 },
             },
@@ -204,7 +215,7 @@
             }
         }
 
-        // --- (v.9) Helper function to auto-link URLs in text ---
+        // --- Helper function to auto-link URLs ---
         function linkify(inputText) {
             if (!inputText) return '';
             const urlRegex = /((https?:\/\/[^\s<]+)|(www\.[^\s<]+))/g;
@@ -218,7 +229,6 @@
             });
         }
 
-
         // --- Firebase Initialization and Auth ---
         async function initFirebaseAndAuth() {
             try {
@@ -226,67 +236,54 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
                 setLogLevel('Debug');
-
                 onAuthStateChanged(auth, async (user) => {
                     const loadingScreen = document.getElementById('loading-screen');
                     const mainApp = document.getElementById('main-app');
                     const loginScreen = document.getElementById('login-screen');
                     const userDisplay = document.getElementById('user-display');
                     const logoutButton = document.getElementById('logout-button');
-
                     if (user) {
                         userId = user.uid;
                         userDisplayName = user.displayName || user.email;
-
                         mainApp.classList.remove('hidden');
                         loginScreen.classList.add('hidden');
                         
                         if (userDisplayName) {
                             const shortName = userDisplayName.split(' ')[0];
-                            userDisplay.textContent = shortName;
+                            userDisplay.textContent = `Hi, ${shortName}`;
                         } else {
-                            userDisplay.textContent = 'User'; // Fallback
+                            userDisplay.textContent = 'User'; 
                         }
-                        logoutButton.classList.remove('hidden');
-
                         await loadDataAndRender();
                     } else {
                         userId = null;
                         userDisplayName = null;
                         if (unsubscribeTrip) unsubscribeTrip(); 
-
                         mainApp.classList.add('hidden');
                         loginScreen.classList.remove('hidden');
                         userDisplay.textContent = '';
-                        logoutButton.classList.add('hidden');
                     }
                     
                     loadingScreen.classList.add('hidden');
                 });
-
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else if (!auth.currentUser) {
-                    // (v.14) If no token, attempt anonymous sign-in for gitlab.io
-                    // This will allow read/write access if rules are public
                     try {
                         await signInAnonymously(auth);
                         console.log("Signed in anonymously");
                     } catch (anonError) {
                         console.error("Anonymous sign-in failed", anonError);
-                        // If rules *require* Google Sign-in, this will fail, 
-                        // but the onAuthStateChanged listener will correctly show the login screen.
                     }
                 }
-
             } catch (error) {
                 displayError("ไม่สามารถเริ่มต้น Firebase ได้", error);
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('login-screen').classList.remove('hidden');
             }
         }
-        
-        // --- Google Login/Logout Functions ---
+
+        // --- Google Login/Logout ---
         async function signInWithGoogle() {
             const provider = new GoogleAuthProvider();
             try {
@@ -296,7 +293,6 @@
                 displayError("ไม่สามารถล็อกอินด้วย Google ได้", error);
             }
         }
-
         async function signOutApp() {
             try {
                 await signOut(auth);
@@ -307,23 +303,14 @@
 
         // --- Data Loading ---
         async function loadDataAndRender() {
-            if (!db || !auth.currentUser) {
-                console.log("Data loading skipped: DB not ready or user not authenticated.");
-                return; 
-            }
-            
-            // (v.14) Now that we sign in (Google or Anon), we should have a user ID.
+            if (!db || !auth.currentUser) return;
             userId = auth.currentUser.uid;
-            console.log("Loading data for User ID:", userId);
-
             const docRef = doc(db, docRefPath);
-
             try {
                 const docSnap = await getDoc(docRef);
                 if (!docSnap.exists()) {
                     await initializeDocument(docRef);
                 }
-
                 if (unsubscribeTrip) unsubscribeTrip();
                 unsubscribeTrip = onSnapshot(docRef, (doc) => {
                     if (doc.exists()) {
@@ -333,14 +320,14 @@
                         displayError("ไม่พบข้อมูลแผนการเดินทาง", "Document does not exist");
                     }
                 }, (error) => {
-                    displayError("เกิดข้อผิดพลาดในการดึงข้อมูล (onSnapshot)", error);
+                    displayError("เกิดข้อผิดพลาดในการดึงข้อมูล", error);
                 });
             } catch (error) {
                 displayError("ไม่สามารถโหลดข้อมูลได้", error);
             }
         }
 
-        // --- Initial Document Data ---
+        // --- Initial Data ---
         async function initializeDocument(docRef) {
             const initialData = {
                 flightInfo: [
@@ -407,8 +394,8 @@
             }
             await setDoc(docRef, initialData);
         }
-        
-        // --- Main UI Rendering Functions ---
+
+        // --- Render Functions ---
         function renderUI(data) {
             if (!data) return;
             displayError(null);
@@ -420,22 +407,24 @@
                 flightInfo: data.flightInfo || [],
                 accommodations: data.accommodations || []
             };
-            try { renderDailyItinerary(safeData.dailyItinerary, safeData.poiCatalog); } catch (e) { displayError("Error in renderDailyItinerary", e); }
-            try { renderChecklist(safeData.checklist); } catch (e) { displayError("Error in renderChecklist", e); }
-            try { renderExpenses(safeData.expenses); } catch (e) { displayError("Error in renderExpenses", e); }
-            try { renderPOI(safeData.poiCatalog); } catch (e) { displayError("Error in renderPOI", e); }
-            try { renderFlights(safeData.flightInfo); } catch (e) { displayError("Error in renderFlights", e); }
-            try { renderAccommodations(safeData.accommodations); } catch (e) { displayError("Error in renderAccommodations", e); }
+            try { renderDailyItinerary(safeData.dailyItinerary, safeData.poiCatalog); } catch (e) { displayError("Render Daily Error", e); }
+            try { renderChecklist(safeData.checklist); } catch (e) { displayError("Render Checklist Error", e); }
+            try { renderExpenses(safeData.expenses); } catch (e) { displayError("Render Expenses Error", e); }
+            try { renderPOI(safeData.poiCatalog); } catch (e) { displayError("Render POI Error", e); }
+            try { renderFlights(safeData.flightInfo); } catch (e) { displayError("Render Flights Error", e); }
+            try { renderAccommodations(safeData.accommodations); } catch (e) { displayError("Render Accomm Error", e); }
         }
 
         function renderFlights(flightInfo) {
             const container = document.getElementById('flight-info-container');
             if (!container) return;
             container.innerHTML = flightInfo.map(info => `
-                <div class="mb-4">
-                    <h4 class="font-semibold text-lg text-gray-800">${info.title}</h4>
-                    <div class="text-gray-700">
-                        ${info.flights.map(f => `<p class="mb-1">${f}</p>`).join('')}
+                <div class="mb-5 last:mb-0 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                    <h4 class="font-bold text-brand-700 mb-2 flex items-center gap-2">
+                        ✈️ ${info.title}
+                    </h4>
+                    <div class="text-slate-600 text-sm space-y-1 pl-2 border-l-2 border-brand-200">
+                        ${info.flights.map(f => `<p>${f}</p>`).join('')}
                     </div>
                 </div>
             `).join('');
@@ -445,142 +434,118 @@
             const container = document.getElementById('accommodation-container');
             if (!container) return;
             container.innerHTML = accommodations.map(acc => `
-                <div class="mb-4">
-                    <h4 class="font-semibold text-lg text-gray-800">${acc.name}</h4>
-                    <p class="text-sm text-gray-600">${acc.dates} | ${acc.address}</p>
-                    <p class="text-sm text-gray-600">📍 ${acc.station}</p>
-                    <p class="text-sm text-gray-600">ราคา: ${acc.priceTHB.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</p>
-                    <a href="${acc.mapLink}" target="_blank" class="text-blue-600 hover:underline text-sm">ดูแผนที่ Google Maps</a>
+                <div class="mb-5 last:mb-0 p-4 bg-slate-50 rounded-xl border border-slate-100 transition hover:bg-white hover:shadow-md">
+                    <h4 class="font-bold text-lg text-slate-800">${acc.name}</h4>
+                    <div class="mt-2 space-y-1 text-sm text-slate-600">
+                         <p class="flex items-center gap-2">📅 ${acc.dates}</p>
+                         <p class="flex items-center gap-2">🏠 ${acc.address}</p>
+                         <p class="flex items-center gap-2">🚇 ${acc.station}</p>
+                         <p class="font-medium text-brand-600">💰 ${acc.priceTHB.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</p>
+                    </div>
+                    <a href="${acc.mapLink}" target="_blank" class="inline-block mt-3 text-xs font-semibold text-brand-600 bg-brand-50 px-3 py-1 rounded-full hover:bg-brand-100 transition">📍 ดูแผนที่</a>
                 </div>
             `).join('');
         }
 
-        // RENDER DAILY ITINERARY
         function renderDailyItinerary(itinerary, poiCatalog) {
             const container = document.getElementById('daily-itinerary-container');
             if (!container) return;
-
             const openStates = {};
             container.querySelectorAll('details').forEach((el) => {
                 const titleEl = el.querySelector('summary > div > span');
-                if (titleEl) {
-                    openStates[titleEl.textContent] = el.hasAttribute('open');
-                }
+                if (titleEl) openStates[titleEl.textContent] = el.hasAttribute('open');
             });
             
             container.innerHTML = itinerary.map((dayItem, index) => {
                 const timelineHtml = (dayItem.items || []).sort((a, b) => a.time.localeCompare(b.time)).map(item => {
+                    let textHtml = item.text ? `<p class="text-slate-700 leading-relaxed">${linkify(item.text)}</p>` : '';
+                    let poiHtml = item.poi && item.poi.name && item.poi.mapLink 
+                        ? `<a href="${item.poi.mapLink}" target="_blank" class="inline-flex items-center gap-1 mt-2 text-xs font-medium text-brand-600 bg-brand-50 px-2 py-1 rounded hover:bg-brand-100 transition">📍 ${item.poi.name}</a>` 
+                        : '';
                     
-                    let textHtml = '';
-                    let poiHtml = '';
-
-                    if (item.text) {
-                        textHtml = `<p class="text-gray-700">${linkify(item.text)}</p>`;
-                    }
-                    
-                    if (item.poi && item.poi.name && item.poi.mapLink) {
-                        poiHtml = `<p class="text-sm text-gray-700 mt-1">
-                                       📍 <a href="${item.poi.mapLink}" target="_blank" rel="noopener noreferrer" class="itinerary-link">${item.poi.name}</a>
-                                   </p>`;
-                    }
-
-                    if (!item.text && !item.poi && (typeof item.text === 'string')) {
-                         textHtml = `<p class="text-gray-700">${linkify(item.text)}</p>`;
-                    }
-
                     return `
-                    <div class="timeline-item pb-4 group">
+                    <div class="timeline-item group">
                         <div class="timeline-dot"></div>
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <span class="font-semibold text-gray-800">${item.time}</span>
+                        <div class="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
+                            <span class="font-mono font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded text-sm whitespace-nowrap">${item.time}</span>
+                            <div class="flex-grow">
                                 ${textHtml}
                                 ${poiHtml}
                             </div>
-                            <div class="flex-shrink-0 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 sm:self-start self-end">
                                 <button onclick="window.app.editDailyItem(${index}, '${item.id}')"
-                                    class="text-blue-500 hover:text-blue-700 text-sm font-medium">แก้ไข</button>
-                                <button onclick="window.app.removeDailyItem(${index}, '${item.id}')" 
-                                    class="text-red-500 hover:text-red-700 text-sm font-medium ml-2">ลบ</button>
+                                    class="text-slate-400 hover:text-brand-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg></button>
+                                <button onclick="window.app.removeDailyItem(${index}, '${item.id}')"
+                                     class="text-slate-400 hover:text-red-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                             </div>
                         </div>
                     </div>
                     `;
                 }).join('');
 
-                const poiOptions = poiCatalog.map(poi => 
-                    `<option value="${poi.id}">${poi.name}</option>`
-                ).join('');
-
+                const poiOptions = poiCatalog.map(poi => `<option value="${poi.id}">${poi.name}</option>`).join('');
                 const isOpen = openStates[dayItem.day] !== undefined ? openStates[dayItem.day] : (index === 0);
                 
-                const hourOptions = Array.from({ length: 24 }, (_, i) => {
-                    const hour = i.toString().padStart(2, '0');
-                    return `<option value="${hour}">${hour}</option>`;
-                }).join('');
-                const minuteOptions = Array.from({ length: 12 }, (_, i) => {
-                    const min = (i * 5).toString().padStart(2, '0');
-                    return `<option value="${min}">${min}</option>`;
-                }).join('');
+                const hourOptions = Array.from({ length: 24 }, (_, i) => `<option value="${i.toString().padStart(2,'0')}">${i.toString().padStart(2,'0')}</option>`).join('');
+                const minuteOptions = Array.from({ length: 12 }, (_, i) => `<option value="${(i*5).toString().padStart(2,'0')}">${(i*5).toString().padStart(2,'0')}</option>`).join('');
 
                 return `
-                <details ${isOpen ? 'open' : ''} class="mb-2 bg-slate-50 shadow-sm rounded-xl overflow-hidden border border-slate-200">
-                    <summary class="font-semibold p-3 cursor-pointer hover:bg-slate-100 transition-colors flex justify-between items-center gap-2">
-                        
-                        <div id="day-header-display-${index}" class="flex justify-between items-center flex-grow">
-                            <span class="font-semibold text-lg text-indigo-700">${dayItem.day}</span>
-                            <button onclick="window.app.toggleDayHeaderEdit(${index}, event, true)" 
-                                    class="ml-2 p-2 rounded-full hover:bg-gray-200 flex-shrink-0">
-                                <svg class="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
+                <details ${isOpen ? 'open' : ''} class="group mb-4 bg-white shadow-sm rounded-2xl overflow-hidden border border-slate-100 hover:shadow-md transition-all duration-300">
+                    <summary class="summary-with-arrow font-semibold p-4 cursor-pointer bg-white hover:bg-slate-50 transition-colors flex justify-between items-center select-none">
+                        <div id="day-header-display-${index}" class="flex items-center gap-3 flex-grow">
+                            <div class="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-sm shadow-sm flex-shrink-0">
+                                D${index + 1}
+                            </div>
+                            <span class="text-lg text-slate-800">${dayItem.day}</span>
+                            <button onclick="window.app.toggleDayHeaderEdit(${index}, event, true)"
+                                     class="opacity-0 group-hover:opacity-100 p-1 rounded-full hover:bg-slate-200 transition-opacity">
+                                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
                             </button>
                         </div>
-
-                        <div id="day-header-edit-${index}" class="hidden flex justify-between items-center flex-grow gap-2">
-                            <input type="text" id="day-header-input-${index}" value="${dayItem.day}" 
-                                   class="font-semibold text-lg p-2 border border-gray-300 rounded-md flex-grow focus:border-blue-500 focus:ring-blue-500">
-                            <button onclick="window.app.updateDayHeader(${index})" 
-                                    class="ml-2 px-3 py-1 bg-green-500 text-white text-sm rounded-md hover:bg-green-600 flex-shrink-0 transition-all duration-200 ease-in-out">บันทึก</button>
-                            <button onclick="window.app.toggleDayHeaderEdit(${index}, event, false)" 
-                                    class="px-3 py-1 bg-gray-400 text-white text-sm rounded-md hover:bg-gray-500 flex-shrink-0 transition-all duration-200 ease-in-out">ยกเลิก</button>
+                        <div id="day-header-edit-${index}" class="hidden flex items-center flex-grow gap-2">
+                            <input type="text" id="day-header-input-${index}" value="${dayItem.day}"
+                                    class="flex-grow p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
+                            <button onclick="window.app.updateDayHeader(${index})" class="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm">Save</button>
+                            <button onclick="window.app.toggleDayHeaderEdit(${index}, event, false)" class="px-3 py-1 bg-slate-400 text-white rounded-lg hover:bg-slate-500 text-sm">Cancel</button>
                         </div>
-
                     </summary>
-                    <div class="p-4 border-t border-slate-200 bg-white">
-                        <div class="mb-4">
-                            ${timelineHtml || '<p class="text-gray-500 text-sm">ยังไม่มีกิจกรรมในวันนี้</p>'}
+                    <div class="p-5 sm:p-6 border-t border-slate-100 bg-white">
+                        <div class="mb-6 space-y-1">
+                            ${timelineHtml || '<div class="text-center py-6 text-slate-400 italic bg-slate-50 rounded-xl border border-dashed border-slate-200">ยังไม่มีกิจกรรมวันนี้</div>'}
                         </div>
                         
-                        <div class="mt-4 pt-4 border-t">
-                            <h4 class="font-semibold mb-2">เพิ่มกิจกรรมใหม่ในวันนี้</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                <div class="col-span-1 flex gap-2">
-                                    <select id="item-hour-${index}" class="flex-grow p-2 border border-gray-300 rounded-md">
-                                        ${hourOptions}
-                                    </select>
-                                    <select id="item-minute-${index}" class="flex-grow p-2 border border-gray-300 rounded-md">
-                                        ${minuteOptions}
-                                    </select>
+                        <div class="mt-6 pt-6 border-t border-slate-100">
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Add New Activity</p>
+                            <div class="flex flex-col gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                <div class="flex gap-2">
+                                    <div class="flex items-center gap-1 bg-white border border-slate-300 rounded-lg px-2 shadow-sm">
+                                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        <select id="item-hour-${index}" class="bg-transparent py-2 outline-none text-sm cursor-pointer hover:text-brand-600">${hourOptions}</select>
+                                        <span class="text-slate-400">:</span>
+                                        <select id="item-minute-${index}" class="bg-transparent py-2 outline-none text-sm cursor-pointer hover:text-brand-600">${minuteOptions}</select>
+                                    </div>
+                                    <input type="text" id="item-text-${index}" placeholder="ทำอะไรดี? (แปะลิงก์ได้นะ)" 
+                                        class="flex-grow p-2 pl-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none shadow-sm text-sm">
                                 </div>
-                                <input type="text" id="item-text-${index}" placeholder="รายละเอียดกิจกรรม (ใส่ลิงก์ได้)" class="md:col-span-2 p-2 border border-gray-300 rounded-md">
+                                <div class="flex gap-2">
+                                     <select id="poi-select-${index}" class="flex-grow p-2 border border-slate-300 rounded-lg text-sm bg-white shadow-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                                        <option value="">-- เลือกสถานที่ (Optional) --</option>
+                                        ${poiOptions}
+                                    </select>
+                                     <button id="add-item-btn-${index}" onclick="window.app.addDailyItem(${index})"
+                                        class="whitespace-nowrap px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 shadow-sm hover:shadow text-sm font-medium transition-all">
+                                        + เพิ่ม
+                                    </button>
+                                     <button id="update-item-btn-${index}" onclick="window.app.updateDailyItem()"
+                                        class="hidden whitespace-nowrap px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 shadow-sm text-sm font-medium transition-all">
+                                        ✓ บันทึก
+                                    </button>
+                                     <button id="cancel-edit-btn-${index}" onclick="window.app.cancelEdit(${index})"
+                                        class="hidden whitespace-nowrap px-4 py-2 bg-slate-400 text-white rounded-lg hover:bg-slate-500 shadow-sm text-sm font-medium transition-all">
+                                        ยกเลิก
+                                    </button>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-2 mt-2">
-                                <select id="poi-select-${index}" class="flex-grow p-2 border border-gray-300 rounded-md">
-                                    <option value="">-- เลือกสถานที่ (ไม่บังคับ) --</option>
-                                    ${poiOptions}
-                                </select>
-                            </div>
-                            <button id="add-item-btn-${index}" onclick="window.app.addDailyItem(${index})"
-                                class="mt-2 w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">
-                                + เพิ่มกิจกรรม
-                            </button>
-                            <button id="update-item-btn-${index}"
-                                class="hidden mt-2 w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-all duration-200 ease-in-out">
-                                ✓ บันทึกการแก้ไข
-                            </button>
-                            <button id="cancel-edit-btn-${index}" onclick="window.app.cancelEdit(${index})"
-                                class="hidden mt-2 w-full px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-all duration-200 ease-in-out">
-                                ยกเลิก
-                            </button>
                         </div>
                     </div>
                 </details>
@@ -588,169 +553,132 @@
             }).join('');
         }
 
-        // --- RENDER CHECKLIST ---
         function renderChecklist(checklist) {
             const list = document.getElementById('checklist-list');
             const noChecklist = document.getElementById('no-checklist');
             if (!list || !noChecklist) return;
-
             list.innerHTML = '';
-            
             const sortedList = (checklist || []).sort((a, b) => a.done - b.done); 
             noChecklist.classList.toggle('hidden', sortedList.length > 0);
-
+            
             sortedList.forEach(item => {
                 const isDone = item.done;
                 list.innerHTML += `
-                    <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md group border-b border-gray-100">
-                        <div class="flex items-center flex-grow mr-2">
-                            <span class="${isDone ? 'text-gray-500' : 'text-gray-800'}">${item.name}</span>
-                            
-                            <div class="flex-shrink-0 ml-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="window.app.editChecklistItem('${item.id}')"
-                                    class="text-blue-500 hover:text-blue-700 text-xs font-medium">แก้ไข</button>
-                                <button onclick="window.app.removeChecklistItem('${item.id}')" 
-                                    class="text-red-500 hover:text-red-700 text-xs font-medium ml-2">ลบ</button>
+                    <li class="flex justify-between items-center p-3 mb-2 bg-slate-50 rounded-xl hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm transition-all group">
+                        <div class="flex items-center flex-grow mr-3 overflow-hidden">
+                            <div onclick="window.app.toggleChecklistItem('${item.id}', ${!isDone})" 
+                                 class="cursor-pointer w-6 h-6 rounded-md border-2 ${isDone ? 'bg-green-500 border-green-500' : 'border-slate-300 bg-white'} flex items-center justify-center transition-colors flex-shrink-0 mr-3">
+                                 ${isDone ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}
                             </div>
+                            <span class="${isDone ? 'text-slate-400 line-through' : 'text-slate-700 font-medium'} truncate select-none cursor-pointer" onclick="window.app.toggleChecklistItem('${item.id}', ${!isDone})">${item.name}</span>
                         </div>
-
-                        <div class="flex-shrink-0">
-                            <button onclick="window.app.toggleChecklistItem('${item.id}', ${!isDone})" 
-                                    class="px-2 py-1 text-sm text-white rounded-md transition-all duration-200 ease-in-out
-                                    ${isDone 
-                                        ? 'bg-gray-500 hover:bg-gray-600'
-                                        : 'bg-green-500 hover:bg-green-600'
-                                    }">
-                                ${isDone ? 'ยังไม่ทำ' : 'ทำแล้ว'}
-                            </button>
+                        <div class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="window.app.editChecklistItem('${item.id}')" class="p-1 text-slate-400 hover:text-brand-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg></button>
+                            <button onclick="window.app.removeChecklistItem('${item.id}')" class="p-1 text-slate-400 hover:text-red-500 ml-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                         </div>
                     </li>
                 `;
             });
         }
 
-        // --- RENDER EXPENSES ---
         function renderExpenses(expenses) {
             const list = document.getElementById('expenses-list');
             const total = document.getElementById('expenses-total');
             const noExpenses = document.getElementById('no-expenses');
             if (!list || !total || !noExpenses) return;
-
             list.innerHTML = '';
             noExpenses.classList.toggle('hidden', expenses.length > 0);
-
             let sum = 0;
+            
             expenses.forEach(exp => {
                 list.innerHTML += `
-                    <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md group border-b border-gray-100">
-                        <div>
-                            <span>${exp.name}</span>
+                    <li class="flex justify-between items-center p-3 mb-2 bg-slate-50 rounded-xl hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm transition-all group">
+                        <div class="flex flex-col overflow-hidden mr-2">
+                            <span class="text-slate-700 font-medium truncate">${exp.name}</span>
+                            <span class="text-xs text-slate-400">${exp.currency}</span>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <span class="${exp.amount >= 0 ? 'text-gray-700' : 'text-red-600'} font-medium text-right">
-                                ${exp.amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })} ${exp.currency}
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold ${exp.amount >= 0 ? 'text-slate-700' : 'text-red-600'}">
+                                ${exp.amount.toLocaleString('th-TH', { minimumFractionDigits: 0 })}
                             </span>
-                            
-                            <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="window.app.editExpenseItem('${exp.id}')"
-                                    class="text-blue-500 hover:text-blue-700 text-xs font-medium">แก้ไข</button>
-                                <button onclick="window.app.removeExpenseItem('${exp.id}')" 
-                                    class="ml-1 text-red-500 hover:text-red-700 text-xs font-medium">ลบ</button>
+                            <div class="flex opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="window.app.editExpenseItem('${exp.id}')" class="p-1 text-slate-400 hover:text-brand-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg></button>
+                                <button onclick="window.app.removeExpenseItem('${exp.id}')" class="p-1 text-slate-400 hover:text-red-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                             </div>
                         </div>
                     </li>
                 `;
-                if (exp.currency === "THB") {
-                    sum += (exp.amount || 0);
-                }
+                if (exp.currency === "THB") sum += (exp.amount || 0);
             });
-            total.textContent = `ยอดรวม: ${sum.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท`;
+            total.textContent = `${sum.toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿`;
         }
-        
-        // --- RENDER POI ---
+
         function renderPOI(poiCatalog) {
             const list = document.getElementById('poi-list');
             if (!list) return;
             list.innerHTML = '';
             (poiCatalog || []).forEach(poi => {
-                const notesHtml = poi.notes 
-                    ? `<p class="text-sm text-gray-600 mt-1"><em>โน้ต: ${poi.notes}</em></p>` 
-                    : '';
-
+                const notesHtml = poi.notes ? `<p class="text-xs text-slate-500 mt-1 line-clamp-2">${poi.notes}</p>` : '';
                 list.innerHTML += `
-                    <li class="p-2 border-b border-gray-100 hover:bg-gray-50 group">
-                        <div class="flex justify-between items-center">
-                            <span class="font-medium">${poi.name}</span>
-                            <a href="${poi.mapLink}" target="_blank" class="text-blue-600 hover:underline text-sm">แผนที่</a>
+                    <li class="p-3 mb-2 bg-slate-50 rounded-xl hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm transition-all group">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h5 class="font-medium text-slate-800">${poi.name}</h5>
+                                ${notesHtml}
+                            </div>
+                            <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="window.app.editPOI('${poi.id}')" class="text-slate-400 hover:text-brand-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg></button>
+                                <button onclick="window.app.removePOI('${poi.id}')" class="text-slate-400 hover:text-red-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                            </div>
                         </div>
-                        ${notesHtml}
-                        <div class="flex gap-3 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onclick="window.app.editPOI('${poi.id}')" class="text-xs text-blue-500 hover:underline">แก้ไข</button>
-                            <button onclick="window.app.removePOI('${poi.id}')" class="text-xs text-red-500 hover:underline">ลบ</button>
-                        </div>
+                        <a href="${poi.mapLink}" target="_blank" class="mt-2 inline-flex items-center text-xs text-brand-600 hover:text-brand-800 font-medium">
+                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            Google Maps
+                        </a>
                     </li>
                 `;
             });
         }
 
-        // --- Database Update Functions ---
-
+        // --- Logic Functions (Same as Original but wired to UI) ---
         async function updateItinerary(newItinerary) {
             try {
                 const docRef = doc(db, docRefPath);
                 await updateDoc(docRef, { dailyItinerary: newItinerary });
-            } catch (error) {
-                displayError("ไม่สามารถอัปเดตแผนรายวันได้", error);
-            }
+            } catch (error) { displayError("Update Itinerary Failed", error); }
         }
+        function getTripDocRef() { return doc(db, docRefPath); }
         
-        function getTripDocRef() {
-            return doc(db, docRefPath);
-        }
-
         function toggleDayHeaderEdit(dayIndex, event, isEditing) {
-            if (event) {
-                event.stopPropagation();
-                event.preventDefault();
-            }
+            if (event) { event.stopPropagation(); event.preventDefault(); }
             const displayDiv = document.getElementById(`day-header-display-${dayIndex}`);
             const editDiv = document.getElementById(`day-header-edit-${dayIndex}`);
             const input = document.getElementById(`day-header-input-${dayIndex}`);
-            
             if (isEditing) {
                 const currentText = displayDiv.querySelector('span').textContent;
                 input.value = currentText;
                 displayDiv.classList.add('hidden');
                 editDiv.classList.remove('hidden');
-                input.focus();
-                input.select();
+                input.focus(); input.select();
             } else {
                 displayDiv.classList.remove('hidden');
                 editDiv.classList.add('hidden');
             }
         }
-
         async function updateDayHeader(dayIndex) {
             const input = document.getElementById(`day-header-input-${dayIndex}`);
             if (!input || !appData) return;
             const newTitle = input.value.trim();
             if (!newTitle) return;
-
             toggleDayHeaderEdit(dayIndex, null, false);
-            
             const oldItinerary = JSON.parse(JSON.stringify(appData.dailyItinerary)); 
-
             try {
                 const newItinerary = appData.dailyItinerary.map((day, index) => {
-                    if (index === dayIndex) {
-                        return { ...day, day: newTitle };
-                    }
+                    if (index === dayIndex) return { ...day, day: newTitle };
                     return day;
                 });
-                
                 appData.dailyItinerary[dayIndex].day = newTitle;
                 renderDailyItinerary(appData.dailyItinerary, appData.poiCatalog);
-
                 await updateItinerary(newItinerary);
             } catch (error) {
                 appData.dailyItinerary = oldItinerary;
@@ -762,7 +690,6 @@
         function editDailyItem(dayIndex, itemId) {
             const item = appData.dailyItinerary[dayIndex].items.find(i => i.id === itemId);
             if (!item) return;
-
             currentEdit = { dayIndex, itemId, checklistId: null, expenseId: null, poiId: null };
             
             const [hour, minute] = item.time.split(':');
@@ -772,26 +699,21 @@
             
             document.getElementById(`item-text-${dayIndex}`).value = item.text || '';
             document.getElementById(`poi-select-${dayIndex}`).value = item.poi ? item.poi.id : '';
-
             document.getElementById(`add-item-btn-${dayIndex}`).classList.add('hidden');
             document.getElementById(`update-item-btn-${dayIndex}`).classList.remove('hidden');
             document.getElementById(`cancel-edit-btn-${dayIndex}`).classList.remove('hidden');
-
-            document.getElementById(`update-item-btn-${dayIndex}`).onclick = () => window.app.updateDailyItem();
             
-            const formInput = document.getElementById(`item-hour-${dayIndex}`);
+            const formInput = document.getElementById(`item-text-${dayIndex}`);
             formInput.focus();
             formInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-
+        
         function cancelEdit(dayIndex) {
             currentEdit = { dayIndex: null, itemId: null, checklistId: null, expenseId: null, poiId: null };
-            
             document.getElementById(`item-hour-${dayIndex}`).value = '09';
             document.getElementById(`item-minute-${dayIndex}`).value = '00';
             document.getElementById(`item-text-${dayIndex}`).value = '';
             document.getElementById(`poi-select-${dayIndex}`).value = ''; 
-
             document.getElementById(`add-item-btn-${dayIndex}`).classList.remove('hidden');
             document.getElementById(`update-item-btn-${dayIndex}`).classList.add('hidden');
             document.getElementById(`cancel-edit-btn-${dayIndex}`).classList.add('hidden');
@@ -800,40 +722,26 @@
         async function updateDailyItem() {
             const { dayIndex, itemId } = currentEdit;
             if (dayIndex === null || !itemId) return;
-
             const hourInput = document.getElementById(`item-hour-${dayIndex}`);
             const minuteInput = document.getElementById(`item-minute-${dayIndex}`);
             const textInput = document.getElementById(`item-text-${dayIndex}`);
             const poiSelect = document.getElementById(`poi-select-${dayIndex}`); 
-            
             const newTime = `${hourInput.value}:${minuteInput.value}`;
             const newText = textInput.value.trim();
-            
             const selectedPoiId = poiSelect.value;
-            const newPoi = selectedPoiId 
-                ? appData.poiCatalog.find(p => p.id === selectedPoiId) || null
-                : null;
-
-            if (!newText && !newPoi) { 
-                displayError("กรุณาใส่รายละเอียดกิจกรรม หรือเลือกสถานที่");
-                return;
-            }
-            
+            const newPoi = selectedPoiId ? appData.poiCatalog.find(p => p.id === selectedPoiId) || null : null;
+            if (!newText && !newPoi) { displayError("ระบุรายละเอียดหรือเลือกสถานที่"); return; }
             cancelEdit(dayIndex); 
-
             const newItinerary = appData.dailyItinerary.map((day, index) => {
                 if (index === dayIndex) {
                     const newItems = day.items.map(item => {
-                        if (item.id === itemId) {
-                            return { ...item, time: newTime, text: newText, poi: newPoi, updatedBy: userDisplayName };
-                        }
+                        if (item.id === itemId) return { ...item, time: newTime, text: newText, poi: newPoi, updatedBy: userDisplayName };
                         return item;
                     });
                     return { ...day, items: newItems };
                 }
                 return day;
             });
-            
             await updateItinerary(newItinerary); 
         }
 
@@ -842,78 +750,39 @@
             const minuteInput = document.getElementById(`item-minute-${dayIndex}`);
             const textInput = document.getElementById(`item-text-${dayIndex}`);
             const poiSelect = document.getElementById(`poi-select-${dayIndex}`); 
-            
-            if (!hourInput || !minuteInput || !textInput || !poiSelect || !appData) return;
-
+            if (!hourInput || !appData) return;
             const time = `${hourInput.value}:${minuteInput.value}`;
             const text = textInput.value.trim();
-            
             const selectedPoiId = poiSelect.value;
-            const selectedPoi = selectedPoiId 
-                ? appData.poiCatalog.find(p => p.id === selectedPoiId) || null
-                : null;
-
-            if (!text && !selectedPoi) { 
-                displayError("กรุณาใส่รายละเอียดกิจกรรม หรือเลือกสถานที่");
-                return;
-            }
-
-            const newItem = {
-                id: `item${Date.now()}`,
-                time: time,
-                text: text, 
-                poi: selectedPoi, 
-                createdBy: userDisplayName 
-            };
-
+            const selectedPoi = selectedPoiId ? appData.poiCatalog.find(p => p.id === selectedPoiId) || null : null;
+            if (!text && !selectedPoi) { displayError("ระบุรายละเอียดหรือเลือกสถานที่"); return; }
+            const newItem = { id: `item${Date.now()}`, time, text, poi: selectedPoi, createdBy: userDisplayName };
             const newItinerary = appData.dailyItinerary.map((day, index) => {
-                if (index === dayIndex) {
-                    const newItems = (day.items || []).concat(newItem);
-                    return { ...day, items: newItems };
-                }
+                if (index === dayIndex) return { ...day, items: (day.items || []).concat(newItem) };
                 return day;
             });
-            
             await updateItinerary(newItinerary);
-            textInput.value = '';
-            poiSelect.value = ''; 
+            textInput.value = ''; poiSelect.value = ''; 
         }
-        
         async function removeDailyItem(dayIndex, itemId) {
             if (!appData) return;
-
             const newItinerary = appData.dailyItinerary.map((day, index) => {
-                if (index === dayIndex) {
-                    const newItems = (day.items || []).filter(item => item.id !== itemId);
-                    return { ...day, items: newItems };
-                }
+                if (index === dayIndex) return { ...day, items: (day.items || []).filter(item => item.id !== itemId) };
                 return day;
             });
-
             await updateItinerary(newItinerary);
         }
-
         async function addDay() {
             if (!appData) return;
             const newDayNum = appData.dailyItinerary.length + 1;
-            const newDay = {
-                day: `วันที่ ${newDayNum} (ระบุวันที่)`,
-                items: [],
-                createdBy: userDisplayName 
-            };
-            
+            const newDay = { day: `Day ${newDayNum}`, items: [], createdBy: userDisplayName };
             try {
                 const docRef = getTripDocRef();
-                await updateDoc(docRef, {
-                    dailyItinerary: arrayUnion(newDay)
-                });
-            } catch (error) {
-                displayError("ไม่สามารถเพิ่มวันใหม่ได้", error);
-            }
+                await updateDoc(docRef, { dailyItinerary: arrayUnion(newDay) });
+            } catch (error) { displayError("Add Day Failed", error); }
         }
-        
-        // --- EXPENSE FUNCTIONS ---
 
+        // --- EXPENSES ---
         function resetExpenseForm() {
             document.getElementById('expense-name').value = '';
             document.getElementById('expense-amount').value = '';
@@ -922,96 +791,57 @@
             document.getElementById('cancel-expense-btn').classList.add('hidden');
             currentEdit.expenseId = null;
         }
-
         function editExpenseItem(id) {
             const item = appData.expenses.find(i => i.id === id);
             if (!item) return;
-            
             currentEdit.expenseId = id;
             document.getElementById('expense-name').value = item.name;
             document.getElementById('expense-amount').value = item.amount;
-
             document.getElementById('add-expense-btn').classList.add('hidden');
             document.getElementById('update-expense-btn').classList.remove('hidden');
             document.getElementById('cancel-expense-btn').classList.remove('hidden');
-            
             document.getElementById('expense-name').focus();
         }
-
         async function updateExpenseItem() {
             const { expenseId } = currentEdit;
             if (!expenseId) return;
-
-            const nameInput = document.getElementById('expense-name');
-            const amountInput = document.getElementById('expense-amount');
-            const name = nameInput.value.trim();
-            const amount = parseFloat(amountInput.value);
-
-            if (!name || isNaN(amount)) {
-                displayError("กรุณากรอกชื่อและจำนวนเงินให้ถูกต้อง");
-                return;
-            }
-
+            const name = document.getElementById('expense-name').value.trim();
+            const amount = parseFloat(document.getElementById('expense-amount').value);
+            if (!name || isNaN(amount)) { displayError("กรอกข้อมูลให้ครบถ้วน"); return; }
             const newExpenses = appData.expenses.map(item => {
-                if (item.id === expenseId) {
-                    return { ...item, name: name, amount: amount, updatedBy: userDisplayName };
-                }
+                if (item.id === expenseId) return { ...item, name, amount, updatedBy: userDisplayName };
                 return item;
             });
-
             try {
                 const docRef = getTripDocRef();
                 await updateDoc(docRef, { expenses: newExpenses });
                 resetExpenseForm();
-            } catch (error) {
-                displayError("ไม่สามารถอัปเดตรายจ่ายได้", error);
-            }
+            } catch (error) { displayError("Update Expense Failed", error); }
         }
-
         async function addExpense() {
-            const nameInput = document.getElementById('expense-name');
-            const amountInput = document.getElementById('expense-amount');
-            if (!nameInput || !amountInput) return;
-
-            const name = nameInput.value.trim();
-            const amount = parseFloat(amountInput.value);
-
+            const name = document.getElementById('expense-name').value.trim();
+            const amount = parseFloat(document.getElementById('expense-amount').value);
             if (name && !isNaN(amount)) {
-                const newExpense = {
-                    id: `exp${Date.now()}`,
-                    name: name,
-                    amount: amount,
-                    currency: "THB",
-                    createdBy: userDisplayName 
-                };
+                const newExpense = { id: `exp${Date.now()}`, name, amount, currency: "THB", createdBy: userDisplayName };
                 try {
                     const docRef = getTripDocRef();
                     await updateDoc(docRef, { expenses: arrayUnion(newExpense) });
-                    nameInput.value = '';
-                    amountInput.value = '';
-                } catch (error) {
-                    displayError("ไม่สามารถเพิ่มรายจ่ายได้", error);
-                }
-            } else {
-                displayError("กรุณากรอกชื่อและจำนวนเงิน");
+                    resetExpenseForm();
+                } catch (error) { displayError("Add Expense Failed", error); }
             }
         }
-        
         async function removeExpenseItem(id) {
             if (!appData) return;
-            const itemToRemove = appData.expenses.find(item => item.id === id);
-            if (itemToRemove) {
+            const item = appData.expenses.find(i => i.id === id);
+            if (item) {
                 try {
                     const docRef = getTripDocRef();
-                    await updateDoc(docRef, { expenses: arrayRemove(itemToRemove) });
-                } catch (error) {
-                    displayError("ไม่สามารถลบรายจ่ายได้", error);
-                }
+                    await updateDoc(docRef, { expenses: arrayRemove(item) });
+                } catch (error) { displayError("Remove Expense Failed", error); }
             }
         }
-        
-        // --- CHECKLIST FUNCTIONS ---
-        
+
+        // --- CHECKLIST ---
         function resetChecklistForm() {
             document.getElementById('checklist-name').value = '';
             document.getElementById('add-checklist-btn').classList.remove('hidden');
@@ -1019,113 +849,75 @@
             document.getElementById('cancel-checklist-btn').classList.add('hidden');
             currentEdit.checklistId = null;
         }
-
         function editChecklistItem(id) {
             const item = appData.checklist.find(i => i.id === id);
             if (!item) return;
-            
             currentEdit.checklistId = id;
             document.getElementById('checklist-name').value = item.name;
-            
             document.getElementById('add-checklist-btn').classList.add('hidden');
             document.getElementById('update-checklist-btn').classList.remove('hidden');
             document.getElementById('cancel-checklist-btn').classList.remove('hidden');
-            
             document.getElementById('checklist-name').focus();
         }
-
         async function updateChecklistItem() {
             const { checklistId } = currentEdit;
             if (!checklistId) return;
-
-            const input = document.getElementById('checklist-name');
-            const name = input.value.trim();
-            if (!name) {
-                displayError("กรุณาใส่ชื่อรายการ");
-                return;
-            }
-
+            const name = document.getElementById('checklist-name').value.trim();
+            if (!name) return;
             const newChecklist = appData.checklist.map(item => {
-                if (item.id === checklistId) {
-                    return { ...item, name: name, updatedBy: userDisplayName };
-                }
+                if (item.id === checklistId) return { ...item, name, updatedBy: userDisplayName };
                 return item;
             });
-
             try {
                 const docRef = getTripDocRef();
                 await updateDoc(docRef, { checklist: newChecklist });
                 resetChecklistForm();
-            } catch (error) {
-                displayError("ไม่สามารถอัปเดต Checklist ได้", error);
-            }
+            } catch (error) { displayError("Update Checklist Failed", error); }
         }
-
         async function addChecklistItem() {
-            const input = document.getElementById('checklist-name');
-            if (!input) return;
-            const name = input.value.trim();
+            const name = document.getElementById('checklist-name').value.trim();
             if (name) {
-                const newItem = {
-                    id: `chk${Date.now()}`,
-                    name: name,
-                    done: false,
-                    createdBy: userDisplayName 
-                };
+                const newItem = { id: `chk${Date.now()}`, name, done: false, createdBy: userDisplayName };
                 try {
                     const docRef = getTripDocRef();
                     await updateDoc(docRef, { checklist: arrayUnion(newItem) });
-                    input.value = '';
-                } catch (error) {
-                    displayError("ไม่สามารถเพิ่มรายการ Checklist ได้", error);
-                }
+                    resetChecklistForm();
+                } catch (error) { displayError("Add Checklist Failed", error); }
             }
         }
-        
         async function toggleChecklistItem(id, isDone) {
             if (!appData) return;
             const newChecklist = appData.checklist.map(item => {
-                if (item.id === id) {
-                    return { ...item, done: isDone };
-                }
+                if (item.id === id) return { ...item, done: isDone };
                 return item;
             });
             try {
                 const docRef = getTripDocRef();
                 await updateDoc(docRef, { checklist: newChecklist });
-            } catch (error) {
-                displayError("ไม่สามารถอัปเดต Checklist ได้", error);
-            }
+            } catch (error) { displayError("Toggle Checklist Failed", error); }
         }
-
         async function removeChecklistItem(id) {
             if (!appData) return;
-            const itemToRemove = appData.checklist.find(item => item.id === id);
-            if (itemToRemove) {
+            const item = appData.checklist.find(i => i.id === id);
+            if (item) {
                 try {
                     const docRef = getTripDocRef();
-                    await updateDoc(docRef, { checklist: arrayRemove(itemToRemove) });
-                } catch (error) {
-                    displayError("ไม่สามารถลบรายการ Checklist ได้", error);
-                }
+                    await updateDoc(docRef, { checklist: arrayRemove(item) });
+                } catch (error) { displayError("Remove Checklist Failed", error); }
             }
         }
 
-        // --- POI FUNCTIONS ---
-        
+        // --- POI ---
         function togglePoiForm(show) {
             const form = document.getElementById('poi-form-container');
             const showBtn = document.getElementById('show-poi-form-btn');
             if (show) {
-                form.classList.remove('hidden');
-                showBtn.classList.add('hidden');
+                form.classList.remove('hidden'); showBtn.classList.add('hidden');
             } else {
-                form.classList.add('hidden');
-                showBtn.classList.remove('hidden');
-                resetPoiForm(); 
+                form.classList.add('hidden'); showBtn.classList.remove('hidden');
+                resetPoiForm();
             }
         }
-
         function resetPoiForm() {
             document.getElementById('poi-name').value = '';
             document.getElementById('poi-link').value = '';
@@ -1135,329 +927,238 @@
             document.getElementById('cancel-poi-btn').classList.add('hidden');
             currentEdit.poiId = null;
         }
-
         function editPOI(id) {
             const item = appData.poiCatalog.find(i => i.id === id);
             if (!item) return;
-
-            togglePoiForm(true); 
-
+            togglePoiForm(true);
             currentEdit.poiId = id;
             document.getElementById('poi-name').value = item.name;
             document.getElementById('poi-link').value = item.mapLink;
             document.getElementById('poi-notes').value = item.notes || '';
-            
             document.getElementById('add-poi-btn').classList.add('hidden');
             document.getElementById('update-poi-btn').classList.remove('hidden');
             document.getElementById('cancel-poi-btn').classList.remove('hidden');
-            
             document.getElementById('poi-link').focus();
-            document.getElementById('poi-link').scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-
         async function updatePOI() {
             const { poiId } = currentEdit;
             if (!poiId) return;
-            
-            const nameInput = document.getElementById('poi-name');
-            const linkInput = document.getElementById('poi-link');
-            const notesInput = document.getElementById('poi-notes'); 
-
-            const name = nameInput.value.trim();
-            const mapLink = linkInput.value.trim();
-            const notes = notesInput.value.trim(); 
-
-            if (!name || !mapLink) {
-                displayError("กรุณาใส่ลิงก์และชื่อสถานที่");
-                return;
-            }
-
-            const newPoiCatalog = appData.poiCatalog.map(item => {
-                if (item.id === poiId) {
-                    return { ...item, name, mapLink, notes, updatedBy: userDisplayName };
-                }
+            const name = document.getElementById('poi-name').value.trim();
+            const mapLink = document.getElementById('poi-link').value.trim();
+            const notes = document.getElementById('poi-notes').value.trim();
+            if (!name || !mapLink) return;
+            const newCatalog = appData.poiCatalog.map(item => {
+                if (item.id === poiId) return { ...item, name, mapLink, notes, updatedBy: userDisplayName };
                 return item;
             });
-
             try {
                 const docRef = getTripDocRef();
-                await updateDoc(docRef, { poiCatalog: newPoiCatalog });
-                togglePoiForm(false); 
-            } catch (error) {
-                displayError("ไม่สามารถอัปเดต POI ได้", error);
-            }
+                await updateDoc(docRef, { poiCatalog: newCatalog });
+                togglePoiForm(false);
+            } catch (error) { displayError("Update POI Failed", error); }
         }
-
         async function addPOI() {
-            const nameInput = document.getElementById('poi-name');
-            const linkInput = document.getElementById('poi-link');
-            const notesInput = document.getElementById('poi-notes'); 
-            if (!nameInput || !linkInput || !notesInput) return;
-
-            const name = nameInput.value.trim();
-            const mapLink = linkInput.value.trim();
-            const notes = notesInput.value.trim(); 
-
+            const name = document.getElementById('poi-name').value.trim();
+            const mapLink = document.getElementById('poi-link').value.trim();
+            const notes = document.getElementById('poi-notes').value.trim();
             if (name && mapLink) {
-                const newPOI = {
-                    id: `poi${Date.now()}`,
-                    name: name,
-                    mapLink: mapLink,
-                    notes: notes,
-                    createdBy: userDisplayName 
-                };
+                const newPOI = { id: `poi${Date.now()}`, name, mapLink, notes, createdBy: userDisplayName };
                 try {
                     const docRef = getTripDocRef();
                     await updateDoc(docRef, { poiCatalog: arrayUnion(newPOI) });
-                    togglePoiForm(false); 
-                } catch (error) {
-                    displayError("ไม่สามารถเพิ่ม POI ได้", error);
-                }
-            } else {
-                displayError("กรุณาใส่ลิงก์และชื่อสถานที่");
+                    togglePoiForm(false);
+                } catch (error) { displayError("Add POI Failed", error); }
             }
         }
-
         async function removePOI(id) {
             if (!appData) return;
-            const poiToRemove = appData.poiCatalog.find(poi => poi.id === id);
-            if (poiToRemove) {
+            const item = appData.poiCatalog.find(i => i.id === id);
+            if (item) {
                 try {
                     const docRef = getTripDocRef();
-                    await updateDoc(docRef, { poiCatalog: arrayRemove(poiToRemove) });
-                } catch (error) {
-                    displayError("ไม่สามารถลบ POI ได้", error);
-                }
+                    await updateDoc(docRef, { poiCatalog: arrayRemove(item) });
+                } catch (error) { displayError("Remove POI Failed", error); }
             }
         }
-        
-        // --- (v.13) REMOVED Gemini API Functions ---
 
-
-        // --- Expose functions to global scope for inline onclick ---
         window.app = {
-            signInWithGoogle, 
-            signOutApp,       
-            addDailyItem,
-            removeDailyItem,
-            addDay,
-            addExpense,
-            removeExpenseItem, 
-            addChecklistItem,
-            toggleChecklistItem,
-            removeChecklistItem, 
-            addPOI,
-            removePOI,
-            toggleDayHeaderEdit, 
-            updateDayHeader, 
-            editDailyItem,   
-            updateDailyItem, 
-            cancelEdit,
-            editChecklistItem,
-            updateChecklistItem,
-            resetChecklistForm,
-            editExpenseItem,
-            updateExpenseItem,
-            resetExpenseForm,
-            editPOI,
-            updatePOI,
-            resetPoiForm,
-            // analyzeMapLink, // (v.13) REMOVED
-            togglePoiForm 
+            signInWithGoogle, signOutApp, addDailyItem, removeDailyItem, addDay,
+            addExpense, removeExpenseItem, addChecklistItem, toggleChecklistItem, removeChecklistItem,
+            addPOI, removePOI, toggleDayHeaderEdit, updateDayHeader, editDailyItem,
+            updateDailyItem, cancelEdit, editChecklistItem, updateChecklistItem, resetChecklistForm,
+            editExpenseItem, updateExpenseItem, resetExpenseForm, editPOI, updatePOI, resetPoiForm, togglePoiForm
         };
-
-        // --- Start Application ---
         document.addEventListener('DOMContentLoaded', initFirebaseAndAuth);
-
     </script>
 </head>
-
-<body class="bg-slate-200 font-sans">
+<body class="antialiased min-h-screen">
     
-    <!-- Loading Screen -->
-    <div id="loading-screen" class="flex items-center justify-center min-h-screen">
-        <div class="flex flex-col items-center">
-            <div class="loader"></div>
-            <p class="text-gray-600 mt-4 animate-pulse">กำลังโหลดแผนการเดินทาง...</p>
+    <div id="loading-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white">
+        <div class="loader mb-6"></div>
+        <p class="text-slate-500 font-medium animate-pulse tracking-wide">กำลังโหลดข้อมูลการเดินทาง...</p>
+    </div>
+
+    <div id="login-screen" class="hidden min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-indigo-100 via-purple-100 to-white">
+        <div class="glass-card w-full max-w-md p-10 rounded-3xl shadow-2xl text-center transform transition-all hover:scale-[1.01]">
+            <div class="w-20 h-20 bg-gradient-to-tr from-brand-500 to-purple-600 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg text-4xl">
+                🇯🇵
+            </div>
+            <h1 class="text-3xl font-bold text-slate-800 mb-2">Bear Cat Trip 2025</h1>
+            <p class="text-slate-500 mb-8">บันทึกแผนเที่ยว Fukuoka - Osaka</p>
+            <button onclick="window.app.signInWithGoogle()"
+                class="w-full px-6 py-4 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-3 transition-all duration-300 shadow-sm hover:shadow-md font-medium">
+                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039L38.485 13.85C34.609 10.323 29.723 8 24 8 12.954 8 4 16.954 4 28s8.954 20 20 20 20-8.954 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691c2.007-4.103 5.703-7.141 10.08-8.974L11.707 10.2C8.618 11.66 6.814 13.06 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-5.02-4.99C30.05 36.1 27.208 38 24 38c-3.882 0-7.23-2.023-9.117-5.034l-5.51 4.83C11.65 41.59 17.51 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.103 4.148-3.94 5.574l5.02 4.99C41.87 35.19 44 30.65 44 26c0-1.341-.138-2.65-.389-3.917z"/></svg>
+                Sign in with Google
+            </button>
         </div>
     </div>
 
-    <!-- Login Screen -->
-    <div id="login-screen" class="hidden container mx-auto p-8 max-w-md mt-20 bg-white shadow-lg rounded-lg text-center">
+    <div id="main-app" class="hidden min-h-screen pb-20">
         
-        <h1 class="text-3xl font-bold text-gray-900 mb-4">Bear Cat In FOK 2025</h1>
-        <p class="text-gray-600 mb-6">กรุณาล็อกอินเพื่อเข้าใช้งานแผนการเดินทาง</p>
-        <button onclick="window.app.signInWithGoogle()"
-            class="w-full px-4 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center justify-center gap-2 transition-all duration-200 ease-in-out">
-            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039L38.485 13.85C34.609 10.323 29.723 8 24 8 12.954 8 4 16.954 4 28s8.954 20 20 20 20-8.954 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691c2.007-4.103 5.703-7.141 10.08-8.974L11.707 10.2C8.618 11.66 6.814 13.06 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-5.02-4.99C30.05 36.1 27.208 38 24 38c-3.882 0-7.23-2.023-9.117-5.034l-5.51 4.83C11.65 41.59 17.51 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.103 4.148-3.94 5.574l5.02 4.99C41.87 35.19 44 30.65 44 26c0-1.341-.138-2.65-.389-3.917z"/></svg>
-            Sign in with Google
-        </button>
-    </div>
-
-    <!-- Main Application -->
-    <div id="main-app" class="hidden container mx-auto p-4 md:p-8 max-w-7xl">
-
-        <header class="mb-4 bg-white shadow-sm rounded-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
-            <div class="flex-grow">
-                <h1 class="text-xl md:text-2xl font-bold text-indigo-700 leading-tight">Bear Cat In FOK 2025</h1>
-                <p class="text-xs md:text-sm text-gray-500 mt-1">ทริปญี่ปุ่น (Fukuoka → Osaka)<br class="md:hidden"> 27 Dec 2025 - 3 Jan 2026</p>
-            </div>
-            <div class="flex items-center gap-2 mt-2 md:mt-0 self-end md:self-auto">
-                <span id="user-display" class="text-xs text-gray-500"></span>
-                <button id="logout-button" onclick="window.app.signOutApp()"
-                    class="px-2 py-1 bg-gray-100 border border-gray-300 text-gray-600 rounded hover:bg-gray-200 text-xs transition-colors">
-                    Logout
-                </button>
+        <header class="bg-gradient-to-r from-brand-700 to-purple-800 text-white shadow-lg mb-8">
+            <div class="container mx-auto px-4 py-6 md:py-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="text-2xl">🐻🐱</span>
+                            <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Bear Cat In FOK 2025</h1>
+                        </div>
+                        <p class="text-brand-100 text-sm md:text-base font-light opacity-90">
+                            Trip to Japan • Fukuoka & Osaka • 27 Dec 25 - 3 Jan 26
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
+                        <div class="w-2 h-2 rounded-full bg-green-400 shadow-glow"></div>
+                        <span id="user-display" class="text-sm font-medium"></span>
+                        <button onclick="window.app.signOutApp()" class="ml-2 text-xs text-brand-200 hover:text-white underline decoration-dotted underline-offset-4">Logout</button>
+                    </div>
+                </div>
             </div>
         </header>
 
-        <!-- Error Message Bar -->
-        <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
-            <span id="error-message-text"></span>
+        <div id="error-message" class="hidden container mx-auto px-4 mb-6">
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r shadow-sm flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-red-700" id="error-message-text"></p>
+                </div>
+            </div>
         </div>
 
-        <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-            <!-- Left Column (Main) -->
-            <div class="lg:col-span-2 space-y-6">
-
-                <!-- 1. Daily Itinerary -->
-                <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                    <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">🗺️ แผนการเดินทางรายวัน</h2>
-                    <div id="daily-itinerary-container" class="p-5 space-y-2">
-                        <!-- Daily itinerary items will be rendered here -->
+        <div class="container mx-auto px-4 max-w-7xl">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <div class="lg:col-span-8 space-y-8">
+                    
+                    <div>
+                        <div class="flex items-center justify-between mb-4 px-1">
+                            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                                <span class="bg-brand-100 text-brand-600 p-2 rounded-lg">🗺️</span> แผนการเดินทาง
+                            </h2>
+                            <button onclick="window.app.addDay()" class="text-sm font-medium text-brand-600 hover:text-brand-800 bg-white hover:bg-brand-50 border border-slate-200 px-4 py-2 rounded-full transition shadow-sm">
+                                + เพิ่มวัน
+                            </button>
+                        </div>
+                        <div id="daily-itinerary-container">
+                            </div>
                     </div>
-                    <div class="p-5 border-t border-gray-200">
-                        <button onclick="window.app.addDay()" class="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-all duration-200 ease-in-out">
-                            + เพิ่มวันเดินทางใหม่
-                        </button>
-                    </div>
-                </div>
 
-                <!-- (v.9) POI Directory MOVED HERE -->
-                <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                    <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">📍 ไดเรกทอรีสถานที่ (POI)</h2>
-                    <div class="p-5">
-                        <ul id="poi-list" class="space-y-3 mb-4 max-h-96 overflow-y-auto">
-                            <!-- POI items here -->
-                        </ul>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-3xl shadow-soft border border-white p-6 relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 w-32 h-32 bg-orange-100 rounded-full blur-3xl opacity-50 -mr-10 -mt-10"></div>
+                            <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 relative z-10">
+                                <span class="text-xl">🏨</span> ที่พัก
+                            </h3>
+                            <div id="accommodation-container" class="relative z-10"></div>
+                        </div>
                         
-                        <button id="show-poi-form-btn" onclick="window.app.togglePoiForm(true)"
-                            class="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-all duration-200 ease-in-out">
-                            + เพิ่มสถานที่ใหม่
-                        </button>
-                        
-                        <div id="poi-form-container" class="hidden mt-4 space-y-2 border-t pt-4">
-                            <h3 class="font-semibold">เพิ่ม / แก้ไข สถานที่</h3>
-                            
-                            <!-- (v.13) Updated placeholder -->
-                            <input type="text" id="poi-link" placeholder="วางลิงก์ Google Maps ที่นี่"
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
-                            
-                            <!-- (v.13) REMOVED AI Button -->
-
-                            <!-- (v.13) Updated placeholder and removed bg-gray-50 -->
-                            <input type="text" id="poi-name" placeholder="ชื่อสถานที่"
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
-                            
-                            <!-- (v.13) Updated placeholder -->
-                            <input type="text" id="poi-notes" placeholder="โน้ตย่อ (ไม่บังคับ)"
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
-                            
-                            <button id="add-poi-btn" onclick="window.app.addPOI()"
-                                class="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">เพิ่มเข้าไดเรกทอรี</button>
-                            <button id="update-poi-btn" onclick="window.app.updatePOI()"
-                                class="hidden w-full px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-all duration-200 ease-in-out">บันทึกการแก้ไข</button>
-                            <button id="cancel-poi-btn" onclick="window.app.togglePoiForm(false)"
-                                class="hidden w-full px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-all duration-200 ease-in-out">ยกเลิก</button>
+                        <div class="bg-white rounded-3xl shadow-soft border border-white p-6 relative overflow-hidden">
+                             <div class="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full blur-3xl opacity-50 -mr-10 -mt-10"></div>
+                            <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 relative z-10">
+                                <span class="text-xl">✈️</span> เที่ยวบิน
+                            </h3>
+                            <div id="flight-info-container" class="relative z-10"></div>
                         </div>
                     </div>
-                </div>
-
-                <!-- (v.9) Accommodation - Converted to <details> -->
-                <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                    <details open>
-                        <summary class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200 cursor-pointer hover:bg-slate-50 summary-with-arrow">
-                            🏨 ที่พักที่จองแล้ว
-                        </summary>
-                        <div id="accommodation-container" class="p-5 divide-y divide-gray-200">
-                            <!-- Accommodation info will be rendered here -->
+                    
+                    <div class="bg-white rounded-3xl shadow-soft border border-white overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                             <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <span class="bg-yellow-100 text-yellow-600 p-1.5 rounded-lg text-lg">📍</span> สถานที่ (POI)
+                            </h2>
+                            <button id="show-poi-form-btn" onclick="window.app.togglePoiForm(true)" class="text-xs font-bold text-brand-600 uppercase tracking-wide border border-brand-200 px-3 py-1 rounded-full hover:bg-brand-50 transition">Add New</button>
                         </div>
-                    </details>
-                </div>
-
-                <!-- (v.9) Flight Info - Converted to <details> -->
-                <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                    <details open>
-                        <summary class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200 cursor-pointer hover:bg-slate-50 summary-with-arrow">
-                            ✈️ ข้อมูลเที่ยวบินหลัก
-                        </summary>
-                        <div id="flight-info-container" class="p-5 divide-y divide-gray-200">
-                            <!-- Flight info will be rendered here -->
+                        
+                        <div id="poi-form-container" class="hidden bg-slate-50 p-6 border-b border-slate-100 animate-fade-in-down">
+                            <div class="grid gap-3">
+                                <input type="text" id="poi-link" placeholder="ลิงก์ Google Maps" class="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-500 outline-none text-sm">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <input type="text" id="poi-name" placeholder="ชื่อสถานที่" class="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-500 outline-none text-sm">
+                                    <input type="text" id="poi-notes" placeholder="โน้ตสั้นๆ" class="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-500 outline-none text-sm">
+                                </div>
+                                <div class="flex gap-2 justify-end mt-2">
+                                    <button id="cancel-poi-btn" onclick="window.app.togglePoiForm(false)" class="px-4 py-2 text-slate-500 hover:text-slate-700 text-sm">ยกเลิก</button>
+                                    <button id="add-poi-btn" onclick="window.app.addPOI()" class="px-6 py-2 bg-brand-600 text-white rounded-xl hover:bg-brand-700 shadow-sm text-sm font-medium">เพิ่มสถานที่</button>
+                                    <button id="update-poi-btn" onclick="window.app.updatePOI()" class="hidden px-6 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 shadow-sm text-sm font-medium">บันทึก</button>
+                                </div>
+                            </div>
                         </div>
-                    </details>
+
+                        <div class="p-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+                            <ul id="poi-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></ul>
+                        </div>
+                    </div>
+
                 </div>
 
+                <div class="lg:col-span-4 space-y-8">
+                    
+                    <div class="bg-white rounded-3xl shadow-soft border border-white p-6">
+                        <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                            <span class="bg-green-100 text-green-600 p-1.5 rounded-lg text-lg">✓</span> สิ่งที่ต้องเตรียม
+                        </h2>
+                        
+                        <ul id="checklist-list" class="space-y-2 mb-6 max-h-[300px] overflow-y-auto pr-1"></ul>
+                        <p id="no-checklist" class="text-slate-400 text-sm text-center py-4 italic">ว่างเปล่า... สบายใจได้</p>
+                        
+                        <div class="flex gap-2 pt-4 border-t border-slate-100">
+                            <input type="text" id="checklist-name" placeholder="อย่าลืม..." class="flex-grow p-2 pl-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm">
+                            <button id="add-checklist-btn" onclick="window.app.addChecklistItem()" class="bg-brand-600 text-white w-10 h-10 rounded-xl flex items-center justify-center hover:bg-brand-700 shadow-sm transition">
+                                <span class="text-xl leading-none">+</span>
+                            </button>
+                            <button id="update-checklist-btn" onclick="window.app.updateChecklistItem()" class="hidden bg-green-500 text-white w-10 h-10 rounded-xl flex items-center justify-center hover:bg-green-600 shadow-sm transition">✓</button>
+                            <button id="cancel-checklist-btn" onclick="window.app.resetChecklistForm()" class="hidden bg-slate-400 text-white w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-500 transition">✕</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl shadow-soft border border-white p-6">
+                        <div class="flex justify-between items-baseline mb-6">
+                            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <span class="bg-rose-100 text-rose-600 p-1.5 rounded-lg text-lg">฿</span> รายจ่าย
+                            </h2>
+                            <span id="expenses-total" class="text-lg font-bold text-brand-700">0 ฿</span>
+                        </div>
+
+                        <ul id="expenses-list" class="space-y-2 mb-6 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar"></ul>
+                        <p id="no-expenses" class="text-slate-400 text-sm text-center py-4 italic">ยังไม่มีการบันทึก</p>
+                        
+                        <div class="space-y-3 pt-4 border-t border-slate-100 bg-slate-50/50 p-4 rounded-xl">
+                            <input type="text" id="expense-name" placeholder="ค่าอะไร" class="w-full p-2 pl-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm">
+                            <input type="number" id="expense-amount" placeholder="กี่บาท" class="w-full p-2 pl-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm">
+                            
+                            <div class="flex gap-2">
+                                <button id="add-expense-btn" onclick="window.app.addExpense()" class="flex-grow py-2 bg-slate-800 text-white rounded-xl hover:bg-slate-900 shadow-sm text-sm font-medium transition">บันทึก</button>
+                                <button id="update-expense-btn" onclick="window.app.updateExpenseItem()" class="hidden flex-grow py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 shadow-sm text-sm font-medium transition">แก้ไข</button>
+                                <button id="cancel-expense-btn" onclick="window.app.resetExpenseForm()" class="hidden w-auto px-3 py-2 bg-slate-300 text-white rounded-xl hover:bg-slate-400 text-sm font-medium transition">✕</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
             </div>
-
-            <!-- Right Column (Sidebar) -->
-            <div class="space-y-6">
-
-                <!-- 1. Checklist -->
-                <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                    <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">📋 รายการที่ต้องทำ</h2>
-                    <div class="p-5">
-                        <ul id="checklist-list" class="space-y-1 mb-4">
-                            <!-- Checklist items will be rendered here -->
-                        </ul>
-                        <p id="no-checklist" class="text-gray-500 text-sm hidden">ไม่มีรายการ</p>
-
-                        <div class="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 border-t pt-4">
-                            <input type="text" id="checklist-name" placeholder="เพิ่ม/แก้ไข รายการ"
-                                class="flex-grow p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
-                            <button id="add-checklist-btn" onclick="window.app.addChecklistItem()"
-                                class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">เพิ่ม</button>
-                            <button id="update-checklist-btn" onclick="window.app.updateChecklistItem()"
-                                class="hidden px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-all duration-200 ease-in-out">บันทึก</button>
-                            <button id="cancel-checklist-btn" onclick="window.app.resetChecklistForm()"
-                                class="hidden px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-all duration-200 ease-in-out">ยกเลิก</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 2. Expenses -->
-                <div class="bg-white shadow-lg rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                    <h2 class="text-xl md:text-2xl font-semibold text-indigo-700 p-5 border-b border-gray-200">💸 รายจ่าย</h2>
-                    <div class="p-5">
-                        <ul id="expenses-list" class="space-y-1 mb-4">
-                            <!-- Expenses items here -->
-                        </ul>
-                        <p id="no-expenses" class="text-gray-500 text-sm hidden">ไม่มีรายจ่าย</p>
-                        
-                        <div class="border-t pt-4">
-                            <h3 id="expenses-total" class="text-lg font-semibold text-right text-gray-800">ยอดรวม: 0.00 บาท</h3>
-                        </div>
-
-                        <div class="mt-4 space-y-2">
-                            <input type="text" id="expense-name" placeholder="ชื่อรายการ"
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
-                            <input type="number" id="expense-amount" placeholder="จำนวนเงิน (บาท)"
-                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
-                            <button id="add-expense-btn" onclick="window.app.addExpense()"
-                                class="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all duration-200 ease-in-out">บันทึกรายจ่าย</button>
-                            <button id="update-expense-btn" onclick="window.app.updateExpenseItem()"
-                                class="hidden w-full px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-all duration-200 ease-in-out">บันทึกการแก้ไข</button>
-                            <button id="cancel-expense-btn" onclick="window.app.resetExpenseForm()"
-                                class="hidden w-full px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-all duration-200 ease-in-out">ยกเลิก</button>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-        </div> <!-- End Grid -->
-    </div> <!-- End Container -->
+        </div>
+    </div>
 </body>
-
 </html>
