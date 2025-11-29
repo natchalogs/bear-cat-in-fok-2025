@@ -282,7 +282,7 @@
             toggleDayEdit(idx, false);
         }
 
-        async function addItem(idx) {
+       async function addItem(idx) {
             const btn = `btn-add-${idx}`; setLoading(btn, true);
             try {
                 const h = document.getElementById(`h-${idx}`).value;
@@ -292,12 +292,17 @@
                 if(!t && !pid) { alert('ระบุรายละเอียด'); return; }
                 const poi = pid ? appData.poiCatalog.find(p=>p.id===pid) : null;
                 const newItin = [...appData.dailyItinerary];
+                
+                // 1. ดันข้อมูลใหม่เข้าไปก่อน
                 newItin[idx].items.push({ id:`i${Date.now()}`, time:`${h}:${m}`, text:t, poi });
+
+                // 2. สั่งเรียงลำดับทันที (เพิ่มตรงนี้)
+                newItin[idx].items.sort((a, b) => a.time.localeCompare(b.time)); // <--- เพิ่มบรรทัดนี้ครับ
+
                 await updateDoc(doc(db, docRefPath), { dailyItinerary: newItin });
                 document.getElementById(`t-${idx}`).value=''; document.getElementById(`p-${idx}`).value='';
             } finally { setLoading(btn, false); }
         }
-        
         function editItem(dayIdx, itemId) {
             const item = appData.dailyItinerary[dayIdx].items.find(i=>i.id===itemId);
             currentEdit = { dayIndex: dayIdx, itemId };
@@ -317,7 +322,7 @@
             document.getElementById(`btn-cancel-${idx}`).classList.add('hidden');
             currentEdit = {};
         }
-        async function saveItem(idx) {
+       async function saveItem(idx) {
             const btn = `btn-save-${idx}`; setLoading(btn, true);
             try {
                 const { itemId } = currentEdit;
@@ -325,7 +330,14 @@
                 const t = document.getElementById(`t-${idx}`).value.trim(); const pid = document.getElementById(`p-${idx}`).value;
                 const poi = pid ? appData.poiCatalog.find(p=>p.id===pid) : null;
                 const newItin = [...appData.dailyItinerary];
-                const d = newItin[idx]; d.items = d.items.map(i=> i.id===itemId ? {...i, time:`${h}:${m}`, text:t, poi} : i);
+                
+                // 1. แก้ไขข้อมูลในรายการเดิม
+                const d = newItin[idx]; 
+                d.items = d.items.map(i=> i.id===itemId ? {...i, time:`${h}:${m}`, text:t, poi} : i);
+
+                // 2. สั่งเรียงลำดับใหม่ เผื่อแก้เวลา (เพิ่มตรงนี้)
+                d.items.sort((a, b) => a.time.localeCompare(b.time)); // <--- เพิ่มบรรทัดนี้ครับ
+
                 await updateDoc(doc(db, docRefPath), { dailyItinerary: newItin });
                 cancelEditItem(idx);
             } finally { setLoading(btn, false); }
