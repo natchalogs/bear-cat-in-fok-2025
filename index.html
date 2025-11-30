@@ -164,9 +164,16 @@
                             <span class="arrow-icon text-slate-300">▼</span>
                         </div>
                     </summary>
+                    
                     <div class="p-4 border-t border-slate-50 bg-white">
                         
-                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex flex-col gap-2 mb-4">
+                        <div class="space-y-4 mb-4">${itemsHtml || '<div class="text-center text-slate-300 text-sm italic py-2">ว่างเปล่า</div>'}</div>
+
+                        <button id="btn-trigger-${idx}" onclick="window.app.openAddForm(${idx})" class="w-full py-2 border-2 border-dashed border-slate-200 text-slate-400 rounded-lg hover:border-brand-500 hover:text-brand-600 transition-colors text-sm font-medium flex items-center justify-center gap-2">
+                            <span>+ เพิ่มรายการ</span>
+                        </button>
+
+                        <div id="form-container-${idx}" class="hidden bg-slate-50 p-3 rounded-lg border border-slate-100 flex flex-col gap-2 transition-all">
                             <div class="flex flex-col sm:flex-row gap-2">
                                 <div class="flex bg-white border border-slate-200 rounded px-1 h-9 items-center sm:w-auto w-full justify-center">
                                     <select id="h-${idx}" class="bg-transparent text-sm outline-none">${Array.from({length:24},(_,i)=>`<option ${i===9?'selected':''}>${String(i).padStart(2,'0')}</option>`).join('')}</select>
@@ -181,12 +188,10 @@
                             <div class="flex gap-2">
                                 <button id="btn-add-${idx}" onclick="window.app.addItem(${idx})" class="w-full sm:w-auto px-6 bg-brand-600 text-white rounded text-sm h-9 shadow-sm hover:bg-brand-700 transition-colors font-medium">+ เพิ่ม</button>
                                 <button id="btn-save-${idx}" onclick="window.app.saveItem(${idx})" class="hidden w-full sm:w-auto px-6 bg-green-500 text-white rounded text-sm h-9 shadow-sm">บันทึก</button>
-                                <button id="btn-cancel-${idx}" onclick="window.app.cancelEditItem(${idx})" class="hidden w-full sm:w-auto px-4 bg-slate-300 text-white rounded text-sm h-9">ยกเลิก</button>
+                                <button id="btn-cancel-${idx}" onclick="window.app.cancelEditItem(${idx})" class="w-full sm:w-auto px-4 bg-white border border-slate-200 text-slate-500 rounded text-sm h-9">ยกเลิก</button>
                             </div>
                         </div>
 
-                        <div class="space-y-4 mb-4">${itemsHtml || '<div class="text-center text-slate-300 text-sm italic py-2">ว่างเปล่า</div>'}</div>
-                        
                     </div>
                 </details>`;
             }).join('');
@@ -305,23 +310,48 @@
                 document.getElementById(`t-${idx}`).value=''; document.getElementById(`p-${idx}`).value='';
             } finally { setLoading(btn, false); }
         }
+        // 1. ฟังก์ชันเปิดฟอร์ม (ของใหม่)
+        function openAddForm(idx) {
+            document.getElementById(`btn-trigger-${idx}`).classList.add('hidden'); // ซ่อนปุ่มกด
+            const form = document.getElementById(`form-container-${idx}`);
+            form.classList.remove('hidden'); // โชว์ฟอร์ม
+            
+            // เลื่อนจอไปหา + โฟกัส
+            form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => document.getElementById(`t-${idx}`).focus(), 300);
+        }
+
+        // 2. แก้ไข editItem (เพิ่มสั่งให้เปิดฟอร์มอัตโนมัติ)
         function editItem(dayIdx, itemId) {
+            openAddForm(dayIdx); // <--- สั่งเปิดฟอร์มก่อนเลย
+
             const item = appData.dailyItinerary[dayIdx].items.find(i=>i.id===itemId);
             currentEdit = { dayIndex: dayIdx, itemId };
             const [h, m] = item.time.split(':');
-            document.getElementById(`h-${dayIdx}`).value = h; document.getElementById(`m-${dayIdx}`).value = Math.round(m/5)*5;
+            
+            document.getElementById(`h-${dayIdx}`).value = h; 
+            document.getElementById(`m-${dayIdx}`).value = Math.round(m/5)*5;
             document.getElementById(`t-${dayIdx}`).value = item.text; 
             document.getElementById(`p-${dayIdx}`).value = item.poi?.id || '';
+            
             document.getElementById(`btn-add-${dayIdx}`).classList.add('hidden');
             document.getElementById(`btn-save-${dayIdx}`).classList.remove('hidden');
             document.getElementById(`btn-cancel-${dayIdx}`).classList.remove('hidden');
-            document.getElementById(`t-${dayIdx}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+
+        // 3. แก้ไข cancelEditItem (เพิ่มสั่งให้พับฟอร์มเก็บ)
         function cancelEditItem(idx) {
-            document.getElementById(`t-${idx}`).value=''; document.getElementById(`p-${idx}`).value='';
+            document.getElementById(`t-${idx}`).value=''; 
+            document.getElementById(`p-${idx}`).value='';
+            
             document.getElementById(`btn-add-${idx}`).classList.remove('hidden');
             document.getElementById(`btn-save-${idx}`).classList.add('hidden');
-            document.getElementById(`btn-cancel-${idx}`).classList.add('hidden');
+            document.getElementById(`btn-cancel-${idx}`).classList.remove('hidden'); // ปุ่มยกเลิกของเดิมซ่อน แต่ของใหม่เราโชว์ตลอดเป็นปุ่ม "ยกเลิก" เพื่อปิดฟอร์ม
+            
+            // สั่งพับฟอร์มเก็บ
+            document.getElementById(`form-container-${idx}`).classList.add('hidden');
+            document.getElementById(`btn-trigger-${idx}`).classList.remove('hidden');
+
             currentEdit = {};
         }
        async function saveItem(idx) {
@@ -420,7 +450,7 @@
             addDay, removeDay, toggleDayEdit, saveDayTitle,
             addItem, editItem, saveItem, cancelEditItem, removeItem,
             togglePoiForm, addPOI, updatePOI, editPOI, removePOI,
-            addCheck, toggleCheck, removeCheck, addExp, removeExp
+            addCheck, toggleCheck, removeCheck, addExp, removeExp, openAddForm
         };
         document.addEventListener('DOMContentLoaded', initFirebase);
     </script>
