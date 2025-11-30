@@ -185,7 +185,8 @@
                             <span class="day-title text-sm sm:text-lg font-medium text-slate-800 truncate leading-tight">${day.day}</span>
                         </div>
                         <div id="day-edit-${idx}" class="hidden flex-grow flex gap-2 mr-2">
-                            <input type="text" id="day-input-${idx}" class="w-full p-1 border rounded text-sm">
+                            <input type="text" id="day-input-${idx}" class="w-full p-1 border rounded text-sm"
+                                onkeydown="if(event.key === 'Enter') window.app.saveDayTitle(${idx})">
                             <button onclick="window.app.saveDayTitle(${idx})" class="px-2 bg-green-500 text-white rounded text-xs">✓</button>
                             <button onclick="window.app.toggleDayEdit(${idx}, false)" class="px-2 bg-slate-300 rounded text-xs">✕</button>
                         </div>
@@ -289,8 +290,18 @@
         function togglePoiForm(show) {
             const form = document.getElementById('poi-form-container');
             const btn = document.getElementById('show-poi-form-btn');
-            if(show) { form.classList.remove('hidden'); btn.classList.add('hidden'); }
-            else { form.classList.add('hidden'); btn.classList.remove('hidden'); resetPoiForm(); }
+            if(show) { 
+                form.classList.remove('hidden'); 
+                btn.classList.add('hidden'); 
+                
+                // 🔥 สั่งให้โฟกัสทันทีที่เปิดฟอร์ม
+                setTimeout(() => document.getElementById('poi-name').focus(), 100);
+            }
+            else { 
+                form.classList.add('hidden'); 
+                btn.classList.remove('hidden'); 
+                resetPoiForm(); 
+            }
         }
         function resetPoiForm() {
             document.getElementById('poi-name').value=''; document.getElementById('poi-link').value=''; document.getElementById('poi-notes').value='';
@@ -358,9 +369,14 @@
             const inputDiv = document.getElementById(`day-edit-${idx}`);
             if(edit) {
                 document.getElementById(`day-input-${idx}`).value = appData.dailyItinerary[idx].day;
-                view.classList.add('hidden'); inputDiv.classList.remove('hidden');
+                view.classList.add('hidden'); 
+                inputDiv.classList.remove('hidden');
+                
+                // 🔥 สั่งให้โฟกัสทันทีที่กดแก้ไข
+                setTimeout(() => document.getElementById(`day-input-${idx}`).focus(), 100); 
             } else {
-                view.classList.remove('hidden'); inputDiv.classList.add('hidden');
+                view.classList.remove('hidden'); 
+                inputDiv.classList.add('hidden');
             }
         }
         async function saveDayTitle(idx) {
@@ -539,12 +555,103 @@
             await updateDoc(doc(db, docRefPath), { expenses: appData.expenses.filter(e=>e.id!==id) }); 
         }
 
+// --- ส่วนจัดการลิงก์ (Useful Links) ---
+        function renderLinks(list) {
+            const el = document.getElementById('useful-links-list');
+            if(!list || list.length === 0) {
+                el.innerHTML = '<li class="col-span-full text-xs text-slate-400 text-center py-4">ยังไม่มีลิงก์ที่บันทึกไว้</li>';
+                return;
+            }
+            el.innerHTML = list.map(l => `
+                <li class="p-3 bg-white border border-slate-100 rounded-lg shadow-sm flex justify-between items-start group">
+                    <div class="min-w-0 pr-2">
+                        <a href="${l.url}" target="_blank" class="font-medium text-brand-600 underline text-sm truncate block hover:text-brand-800">${l.name}</a>
+                        ${l.note ? `<div class="text-xs text-slate-500 mt-1 line-clamp-2">${l.note}</div>` : ''}
+                    </div>
+                    <div class="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                        <button onclick="window.app.editLink('${l.id}')" class="p-1.5 text-slate-300 hover:text-brand-600 hover:bg-slate-50 rounded-full transition-colors">${iconEdit}</button>
+                        <button onclick="window.app.removeLink('${l.id}')" class="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">${iconTrash}</button>
+                    </div>
+                </li>`).join('');
+        }
+
+        function toggleLinkForm(show) {
+            const form = document.getElementById('link-form-container');
+            const btn = document.getElementById('show-link-form-btn');
+            if(show) {
+                form.classList.remove('hidden');
+                btn.classList.add('hidden');
+                setTimeout(() => document.getElementById('link-url').focus(), 100);
+            } else {
+                form.classList.add('hidden');
+                btn.classList.remove('hidden');
+                document.getElementById('link-name').value = '';
+                document.getElementById('link-url').value = '';
+                document.getElementById('link-note').value = '';
+                document.getElementById('add-link-btn').classList.remove('hidden');
+                document.getElementById('update-link-btn').classList.add('hidden');
+            }
+        }
+
+        async function addLink() {
+            const name = document.getElementById('link-name').value.trim();
+            let url = document.getElementById('link-url').value.trim();
+            const note = document.getElementById('link-note').value.trim();
+            
+            if (!name || !url) { alert("กรุณาใส่ลิงก์และชื่อเรียก"); return; }
+            if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+            setLoading('add-link-btn', true);
+            try {
+                await updateDoc(doc(db, docRefPath), { 
+                    usefulLinks: arrayUnion({ id: `l${Date.now()}`, name, url, note }) 
+                });
+                toggleLinkForm(false);
+            } finally { setLoading('add-link-btn', false); }
+        }
+
+        function editLink(id) {
+            const l = appData.usefulLinks.find(i => i.id === id);
+            if (!l) return;
+            currentEdit.linkId = id;
+            toggleLinkForm(true);
+            document.getElementById('link-name').value = l.name;
+            document.getElementById('link-url').value = l.url;
+            document.getElementById('link-note').value = l.note || '';
+            
+            document.getElementById('add-link-btn').classList.add('hidden');
+            document.getElementById('update-link-btn').classList.remove('hidden');
+        }
+
+        async function updateLink() {
+            const { linkId } = currentEdit;
+            if (!linkId) return;
+            setLoading('update-link-btn', true);
+            try {
+                const name = document.getElementById('link-name').value.trim();
+                let url = document.getElementById('link-url').value.trim();
+                const note = document.getElementById('link-note').value.trim();
+                if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+                const newLinks = appData.usefulLinks.map(l => l.id === linkId ? { ...l, name, url, note } : l);
+                await updateDoc(doc(db, docRefPath), { usefulLinks: newLinks });
+                toggleLinkForm(false);
+            } finally { setLoading('update-link-btn', false); }
+        }
+
+        async function removeLink(id) {
+            if (!confirm('ลบลิงก์นี้?')) return;
+            await updateDoc(doc(db, docRefPath), { 
+                usefulLinks: appData.usefulLinks.filter(l => l.id !== id) 
+            });
+        }
         window.app = { 
             initFirebase, signInWithGoogle: ()=>signInWithPopup(auth, new GoogleAuthProvider()), signOut: ()=>signOut(auth),
             addDay, removeDay, toggleDayEdit, saveDayTitle,
             addItem, editItem, saveItem, cancelEditItem, removeItem,
             togglePoiForm, addPOI, updatePOI, editPOI, removePOI,
-            addCheck, toggleCheck, removeCheck, addExp, removeExp, openAddForm, moveDay, duplicateDay
+            addCheck, toggleCheck, removeCheck, addExp, removeExp, openAddForm, moveDay,
+            duplicateDay, toggleLinkForm, addLink, editLink, updateLink, removeLink
         };
         document.addEventListener('DOMContentLoaded', initFirebase);
     </script>
@@ -644,6 +751,29 @@
                     </div>
                 </section>
             </div>
+            <section class="mt-6 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div class="p-4 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                    <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">🔗 ลิงก์ที่น่าสนใจ</h2>
+                    <button id="show-link-form-btn" onclick="window.app.toggleLinkForm(true)" class="text-xs font-bold text-brand-600 border border-brand-200 px-3 py-1 rounded-full bg-white">Add New</button>
+                </div>
+                
+                <div id="link-form-container" class="hidden bg-slate-50 p-4 border-b border-slate-100">
+                    <div class="grid gap-2">
+                        <input type="text" id="link-url" placeholder="วางลิงก์ (URL) *" class="w-full p-2 rounded border border-slate-200 text-sm">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" id="link-name" placeholder="ชื่อเรียก *" class="w-full p-2 rounded border border-slate-200 text-sm">
+                            <input type="text" id="link-note" placeholder="โน้ตช่วยจำ" class="w-full p-2 rounded border border-slate-200 text-sm">
+                        </div>
+                        <div class="flex gap-2 justify-end mt-2">
+                            <button id="cancel-link-btn" onclick="window.app.toggleLinkForm(false)" class="text-slate-500 text-xs px-3">ยกเลิก</button>
+                            <button id="add-link-btn" onclick="window.app.addLink()" class="w-full sm:w-auto px-6 py-1.5 bg-brand-600 text-white rounded shadow-sm text-xs font-medium">บันทึก</button>
+                            <button id="update-link-btn" onclick="window.app.updateLink()" class="hidden w-full sm:w-auto px-6 py-1.5 bg-green-500 text-white rounded shadow-sm text-xs font-medium">แก้ไข</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <ul id="useful-links-list" class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2"></ul>
+            </section>
         </div>
     </div>
 </body>
