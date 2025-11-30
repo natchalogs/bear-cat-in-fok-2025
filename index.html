@@ -534,7 +534,7 @@
                     <ul id="checklist-list" class="mb-3"></ul>
                     <p id="no-checklist" class="text-xs text-slate-400 text-center py-2">ว่างเปล่า</p>
                     <div class="flex gap-2 mt-2">
-                        <input type="text" id="checklist-name" placeholder="อย่าลืม..." class="flex-grow border rounded px-2 text-sm h-8">
+                        <input type="text" id="checklist-name" placeholder="อย่าลืม..." onkeydown="if(event.key === 'Enter') window.app.addCheck()" class="flex-grow border rounded px-2 text-sm h-8">
                         <button onclick="window.app.addCheck()" class="w-8 h-8 bg-brand-600 text-white rounded flex items-center justify-center">+</button>
                     </div>
                 </section>
@@ -547,7 +547,7 @@
                     <p id="no-expenses" class="text-xs text-slate-400 text-center py-2">ว่างเปล่า</p>
                     <div class="flex gap-2 mt-2">
                         <input type="text" id="exp-name" placeholder="รายการ" class="w-1/2 border rounded px-2 text-sm h-8">
-                        <input type="number" id="exp-amount" placeholder="บาท" class="w-1/3 border rounded px-2 text-sm h-8">
+                        <input type="number" id="exp-amount" placeholder="บาท" onkeydown="if(event.key === 'Enter') window.app.addExp()" class="w-1/3 border rounded px-2 text-sm h-8">
                         <button id="btn-add-exp" onclick="window.app.addExp()" class="flex-grow h-8 bg-slate-800 text-white rounded text-xs">OK</button>
                     </div>
                 </section>
