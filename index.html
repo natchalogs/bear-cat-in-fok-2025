@@ -742,7 +742,8 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+                
                 <section class="h-full flex flex-col bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                     <h2 class="font-bold text-slate-800 text-sm mb-3">✓ สิ่งที่ต้องเตรียม</h2>
                     <ul id="checklist-list" class="mb-3 flex-grow"></ul>
@@ -759,7 +760,7 @@
                         <h2 class="font-bold text-slate-800 text-sm">฿ รายจ่าย</h2>
                         <span id="expenses-total" class="font-bold text-brand-600 text-sm">0 ฿</span>
                     </div>
-                    <ul id="expenses-list" class="mb-3 max-h-60 overflow-y-auto flex-grow"></ul>
+                    <ul id="expenses-list" class="mb-3 flex-grow overflow-y-auto max-h-[300px] md:max-h-none"></ul>
                     <p id="no-expenses" class="text-xs text-slate-400 text-center py-2">ว่างเปล่า</p>
                     
                     <div class="flex gap-2 mt-auto">
