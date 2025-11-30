@@ -127,21 +127,22 @@
             });
 
             container.innerHTML = itinerary.map((day, idx) => {
-                const itemsHtml = (day.items || []).map(item => `
-                    <div class="timeline-item">
-                        <div class="timeline-dot"></div>
-                        <div class="flex flex-col sm:flex-row gap-2 relative group">
-                            <span class="font-mono font-bold text-brand-600 text-xs bg-brand-50 px-2 py-0.5 rounded self-start">${item.time}</span>
-                            <div class="flex-grow min-w-0 text-sm sm:text-base text-slate-700 break-words pr-16 sm:pr-0">
-                                ${item.text ? `<p>${linkify(item.text)}</p>` : ''}
-                                ${item.poi ? `<a href="${item.poi.mapLink}" target="_blank" class="inline-flex items-center gap-1 mt-1 text-xs text-brand-600 bg-brand-50 px-2 py-1 rounded">📍 ${item.poi.name}</a>` : ''}
-                            </div>
-                            <div class="flex gap-3 absolute right-0 top-0 sm:static sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-white sm:bg-transparent pl-2">
-                                <button onclick="window.app.editItem(${idx}, '${item.id}')" class="p-2 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded-full transition-colors">${iconEdit}</button>
-                                <button onclick="window.app.removeItem(${idx}, '${item.id}')" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">${iconTrash}</button>
-                            </div>
+            const itemsHtml = (day.items || []).map(item => `
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="flex flex-col sm:flex-row gap-2 relative group">
+                        <span class="font-mono font-bold text-brand-600 text-xs bg-brand-50 px-2 py-0.5 rounded self-start">${item.time}</span>
+                        <div class="flex-grow min-w-0 text-sm sm:text-base text-slate-700 break-words pr-16 sm:pr-0">
+                            ${item.text ? `<p>${linkify(item.text)}</p>` : ''}
+                            ${item.poi ? `<a href="${item.poi.mapLink}" target="_blank" class="inline-flex items-center gap-1 mt-1 text-xs text-brand-600 bg-brand-50 px-2 py-1 rounded">📍 ${item.poi.name}</a>` : ''}
                         </div>
-                    </div>`).join('');
+                        
+                        <div class="flex gap-3 absolute right-0 top-0 opacity-100 transition-opacity bg-white sm:bg-transparent pl-2">
+                            <button onclick="window.app.editItem(${idx}, '${item.id}')" class="p-2 text-slate-500 hover:text-brand-600 hover:bg-slate-100 rounded-full transition-colors">${iconEdit}</button>
+                            <button onclick="window.app.removeItem(${idx}, '${item.id}')" class="p-2 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">${iconTrash}</button>
+                        </div>
+                    </div>
+                </div>`).join('');
 
                 const poiOpts = poiCatalog.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
                 const isOpen = openStates[day.day] !== undefined ? openStates[day.day] : (idx === 0);
@@ -205,9 +206,9 @@
                         ${p.notes ? `<div class="text-xs text-slate-500 mt-1 line-clamp-2">${p.notes}</div>` : ''}
                         <a href="${p.mapLink}" target="_blank" class="text-xs text-brand-500 hover:underline flex items-center gap-1 mt-2">📍 Google Maps</a>
                     </div>
-                    <div class="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                        <button onclick="window.app.editPOI('${p.id}')" class="p-1.5 text-slate-300 hover:text-brand-600 hover:bg-slate-50 rounded-full transition-colors">${iconEdit}</button>
-                        <button onclick="window.app.removePOI('${p.id}')" class="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">${iconTrash}</button>
+                    <div class="flex gap-1 opacity-100 transition-opacity flex-shrink-0">
+                        <button onclick="window.app.editPOI('${p.id}')" class="p-1.5 text-slate-500 hover:text-brand-600 hover:bg-slate-50 rounded-full transition-colors">${iconEdit}</button>
+                        <button onclick="window.app.removePOI('${p.id}')" class="p-1.5 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">${iconTrash}</button>
                     </div>
                 </li>`).join('');
         }
@@ -385,11 +386,12 @@
             const el = document.getElementById('checklist-list');
             el.innerHTML = list.sort((a,b)=>a.done-b.done).map(c => `
                 <li class="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-lg mb-2 group">
-                    <span onclick="window.app.toggleCheck('${c.id}', ${!c.done})" class="${c.done?'opacity-50 text-slate-400':'text-slate-700'} cursor-pointer select-none flex-grow transition-opacity">${c.name}</span>
-                    <button onclick="window.app.removeCheck('${c.id}')" class="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100">${iconClose}</button>
+                    <span onclick="window.app.toggleCheck('${c.id}', ${!c.done})" class="${c.done?'opacity-50 text-slate-400 line-through':'text-slate-700'} cursor-pointer select-none flex-grow transition-opacity">${c.name}</span>
+                    <button onclick="window.app.removeCheck('${c.id}')" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors opacity-100">${iconClose}</button>
                 </li>`).join('');
             document.getElementById('no-checklist').classList.toggle('hidden', list.length>0);
         }
+
         function renderExpenses(list) {
             const el = document.getElementById('expenses-list');
             let sum = 0;
@@ -400,7 +402,7 @@
                     <span class="text-slate-700 font-medium">${e.name}</span>
                     <div class="flex items-center gap-3">
                         <span class="font-bold text-slate-800">${e.amount.toLocaleString()}</span>
-                        <button onclick="window.app.removeExp('${e.id}')" class="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100">${iconClose}</button>
+                        <button onclick="window.app.removeExp('${e.id}')" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors opacity-100">${iconClose}</button>
                     </div>
                 </li>`;
             }).join('');
