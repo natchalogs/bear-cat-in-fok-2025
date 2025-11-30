@@ -22,27 +22,33 @@
         .timeline-item::before { content: ''; position: absolute; left: 6px; top: 10px; bottom: -10px; width: 2px; background: #e2e8f0; }
         .timeline-item:last-child::before { display: none; }
         .timeline-dot {
-            width: 20px;  /* ขนาดวงกลม */
-            height: 20px;
-            background-color: #4f46e5; /* สีพื้นหลังน้ำเงิน */
-            border: 2px solid white; /* ขอบสีขาว */
-            border-radius: 50%; /* ทรงกลม */
+            width: 24px;  /* ขยายขนาดให้เห็นไอคอนชัดขึ้น */
+            height: 24px;
+            background-color: #4f46e5;
+            border: 2px solid white;
+            border-radius: 50%;
             position: absolute;
-            left: -9px; /* จัดให้อยู่กึ่งกลางเส้น (20/2 - 2/2 = 9) */
-            top: 3px;
+            
+            /* คำนวณให้ตรงกลางเส้น: เส้นอยู่ที่ 6px(กว้าง2px) จุดกึ่งกลางคือ 7px */
+            /* จุดกว้าง 24px จุดกึ่งกลางคือ 12px */
+            /* 7px - 12px = -5px */
+            left: -5px; 
+            top: 2px;
             z-index: 10;
-            /* จัดไอคอนข้างในให้กึ่งกลาง */
+            
+            /* จัดไอคอนแมวให้ลอยตรงกลางวงกลม */
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1); /* เงาเล็กน้อย */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        
-        /* สไตล์สำหรับไอคอนแมวสีขาวข้างใน */
+
+        /* กำหนดขนาดไอคอนแมวข้างใน */
         .timeline-dot svg {
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             fill: white;
+            margin-top: 1px; /* ดันลงนิดนึงให้ดูบาลานซ์ */
         }
         
         .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); }
@@ -152,7 +158,9 @@
                 const itemsHtml = (day.items || []).map(item => `
                     <div class="timeline-item">
                         <div class="timeline-dot">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M256 32C114.6 32 0 125.1 0 240c0 49.6 21.4 95 57 130.7C44.5 421.1 2.7 466 2.2 466.5c-2.2 2.3-2.8 5.7-1.5 8.7S4.8 480 8 480c66.3 0 116-31.8 140.6-51.4 32.7 12.3 69 19.4 107.4 19.4 141.4 0 256-93.1 256-208S397.4 32 256 32zM128 288c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm160-64c-17.7 0-32 14.3-32 32s14.3 32 32 32 32-14.3 32-32-14.3-32-32-32z"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C9 2 7 3.5 6 5C4 5.5 2 7.5 2 10C2 13 4 15 6 15.5V18C6 19.1 6.9 20 8 20H16C17.1 20 18 19.1 18 18V15.5C20 15 22 13 22 10C22 7.5 20 5.5 18 5C17 3.5 15 2 12 2ZM8 9C8.55 9 9 9.45 9 10C9 10.55 8.55 11 8 11C7.45 11 7 10.55 7 10C7 9.45 7.45 9 8 9ZM16 9C16.55 9 17 9.45 17 10C17 10.55 16.55 11 16 11C15.45 11 15 10.55 15 10C15 9.45 15.45 9 16 9ZM12 16C10.5 16 9.15 15.1 8.5 14C9.5 14.5 10.7 14.8 12 14.8C13.3 14.8 14.5 14.5 15.5 14C14.85 15.1 13.5 16 12 16Z"/>
+                            </svg>
                         </div>
                         <div class="flex flex-col sm:flex-row gap-2 relative group">
                             <span class="font-mono font-bold text-brand-600 text-xs bg-brand-50 px-2 py-0.5 rounded self-start">${item.time}</span>
