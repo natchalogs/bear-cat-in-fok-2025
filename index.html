@@ -658,7 +658,17 @@
             addCheck, toggleCheck, removeCheck, addExp, removeExp, openAddForm, moveDay,
             duplicateDay, toggleLinkForm, addLink, editLink, updateLink, removeLink
         };
-        document.addEventListener('DOMContentLoaded', initFirebase);
+        document.addEventListener('DOMContentLoaded', () => {
+            initFirebase();
+            
+            // สคริปต์ใหม่: ถ้าหน้าจอกว้างกว่า 768px (iPad/PC) ให้กาง Accom และ Flight ออกอัตโนมัติ
+            if (window.innerWidth >= 768) {
+                const accom = document.getElementById('details-accom');
+                const flight = document.getElementById('details-flight');
+                if(accom) accom.open = true;
+                if(flight) flight.open = true;
+            }
+        });
     </script>
 </head>
 <body class="bg-slate-100 min-h-screen pb-10">
@@ -719,13 +729,13 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                    <details>
+                    <details id="details-accom">
                         <summary class="font-bold text-slate-800 text-sm cursor-pointer mb-2">🏨 ที่พัก <span class="text-xs font-normal text-slate-400 float-right">▼</span></summary>
                         <div id="accommodation-container" class="mt-2"></div>
                     </details>
                 </div>
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                    <details>
+                    <details id="details-flight">
                         <summary class="font-bold text-slate-800 text-sm cursor-pointer mb-2">✈️ เที่ยวบิน <span class="text-xs font-normal text-slate-400 float-right">▼</span></summary>
                         <div id="flight-info-container" class="mt-2"></div>
                     </details>
@@ -733,23 +743,26 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <section class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <section class="h-full flex flex-col bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                     <h2 class="font-bold text-slate-800 text-sm mb-3">✓ สิ่งที่ต้องเตรียม</h2>
-                    <ul id="checklist-list" class="mb-3"></ul>
+                    <ul id="checklist-list" class="mb-3 flex-grow"></ul>
                     <p id="no-checklist" class="text-xs text-slate-400 text-center py-2">ว่างเปล่า</p>
-                    <div class="flex gap-2 mt-2">
+                    
+                    <div class="flex gap-2 mt-auto">
                         <input type="text" id="checklist-name" placeholder="อย่าลืม..." onkeydown="if(event.key === 'Enter') window.app.addCheck()" class="flex-grow border rounded px-2 text-sm h-8">
                         <button onclick="window.app.addCheck()" class="w-8 h-8 bg-brand-600 text-white rounded flex items-center justify-center">+</button>
                     </div>
                 </section>
-                <section class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+
+                <section class="h-full flex flex-col bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                     <div class="flex justify-between items-baseline mb-3">
                         <h2 class="font-bold text-slate-800 text-sm">฿ รายจ่าย</h2>
                         <span id="expenses-total" class="font-bold text-brand-600 text-sm">0 ฿</span>
                     </div>
-                    <ul id="expenses-list" class="mb-3 max-h-40 overflow-y-auto"></ul>
+                    <ul id="expenses-list" class="mb-3 max-h-60 overflow-y-auto flex-grow"></ul>
                     <p id="no-expenses" class="text-xs text-slate-400 text-center py-2">ว่างเปล่า</p>
-                    <div class="flex gap-2 mt-2">
+                    
+                    <div class="flex gap-2 mt-auto">
                         <input type="text" id="exp-name" placeholder="รายการ" class="w-1/2 border rounded px-2 text-sm h-8">
                         <input type="number" id="exp-amount" placeholder="บาท" onkeydown="if(event.key === 'Enter') window.app.addExp()" class="w-1/3 border rounded px-2 text-sm h-8">
                         <button id="btn-add-exp" onclick="window.app.addExp()" class="flex-grow h-8 bg-slate-800 text-white rounded text-xs">OK</button>
