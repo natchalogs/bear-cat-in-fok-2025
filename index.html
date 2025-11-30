@@ -132,7 +132,7 @@
                     <div class="timeline-dot"></div>
                     <div class="flex flex-col sm:flex-row gap-2 relative group">
                         <span class="font-mono font-bold text-brand-600 text-xs bg-brand-50 px-2 py-0.5 rounded self-start">${item.time}</span>
-                        <div class="flex-grow min-w-0 text-sm sm:text-base text-slate-700 break-words pr-16 sm:pr-0">
+                        <div class="flex-grow min-w-0 text-sm sm:text-base text-slate-700 break-words pr-16 sm:pr-20">
                             ${item.text ? `<p>${linkify(item.text)}</p>` : ''}
                             ${item.poi ? `<a href="${item.poi.mapLink}" target="_blank" class="inline-flex items-center gap-1 mt-1 text-xs text-brand-600 bg-brand-50 px-2 py-1 rounded">📍 ${item.poi.name}</a>` : ''}
                         </div>
