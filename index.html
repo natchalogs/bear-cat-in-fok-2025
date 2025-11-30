@@ -527,9 +527,10 @@
 
         async function addCheck() { const n=document.getElementById('checklist-name').value.trim(); if(n) { await updateDoc(doc(db, docRefPath), { checklist: arrayUnion({id:`c${Date.now()}`, name:n, done:false}) }); document.getElementById('checklist-name').value=''; } }
         async function toggleCheck(id, done) { const l = appData.checklist.map(c=>c.id===id?{...c, done}:c); await updateDoc(doc(db, docRefPath), { checklist: l }); }
-        async function removeCheck(id) { 
-            if(!confirm('ลบรายการนี้?')) return; 
-            await updateDoc(doc(db, docRefPath), { checklist: appData.checklist.filter(c=>c.id!==id) }); 
+        async function removeCheck(id) {
+            if(!confirm('ต้องการลบรายการนี้ใช่ไหม?')) return;
+            const newChecklist = appData.checklist.filter(c => c.id !== id);
+            await updateDoc(doc(db, docRefPath), { checklist: newChecklist });
         }
         
         // --- FIXED: Robust Add Expense ---
@@ -554,9 +555,10 @@
                 setLoading('btn-add-exp', false); 
             }
         }
-        async function removeExp(id) { 
-            if(!confirm('ลบรายจ่ายนี้?')) return; 
-            await updateDoc(doc(db, docRefPath), { expenses: appData.expenses.filter(e=>e.id!==id) }); 
+        async function removeExp(id) {
+            if(!confirm('ต้องการลบรายจ่ายนี้ใช่ไหม?')) return;
+            const newExpenses = appData.expenses.filter(e => e.id !== id);
+            await updateDoc(doc(db, docRefPath), { expenses: newExpenses });
         }
 
 // --- ส่วนจัดการลิงก์ (Useful Links) ---
