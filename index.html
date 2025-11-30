@@ -179,7 +179,7 @@
                                 <div class="flex bg-white border border-slate-200 rounded px-1 h-9 items-center sm:w-auto w-full justify-center">
                                     <select id="h-${idx}" class="bg-transparent text-sm outline-none">${Array.from({length:24},(_,i)=>`<option ${i===9?'selected':''}>${String(i).padStart(2,'0')}</option>`).join('')}</select>
                                     <span class="text-slate-300 mx-1">:</span>
-                                    <select id="m-${idx}" class="bg-transparent text-sm outline-none">${Array.from({length:12},(_,i)=>`<option>${String(i*5).padStart(2,'0')}</option>`).join('')}</select>
+                                    <select id="m-${idx}" class="bg-transparent text-sm outline-none">${Array.from({length:12},(_,i)=>`<option ${i===0?'selected':''}>${String(i*5).padStart(2,'0')}</option>`).join('')}</select>
                                 </div>
                                 <input id="t-${idx}" type="text" placeholder="ทำอะไร..." onkeydown="if(event.key === 'Enter') window.app.addItem(${idx})" class="flex-grow border border-slate-200 rounded px-2 text-sm h-9">
                             </div>
@@ -325,14 +325,19 @@
 
         // 2. แก้ไข editItem (เพิ่มสั่งให้เปิดฟอร์มอัตโนมัติ)
         function editItem(dayIdx, itemId) {
-            openAddForm(dayIdx); // <--- สั่งเปิดฟอร์มก่อนเลย
+            openAddForm(dayIdx); 
 
             const item = appData.dailyItinerary[dayIdx].items.find(i=>i.id===itemId);
             currentEdit = { dayIndex: dayIdx, itemId };
             const [h, m] = item.time.split(':');
             
             document.getElementById(`h-${dayIdx}`).value = h; 
-            document.getElementById(`m-${dayIdx}`).value = Math.round(m/5)*5;
+            
+            // 🔥 แก้ไขตรงนี้: แปลงตัวเลขนาทีให้เป็น "00" เสมอ (เช่น 0 -> "00")
+            const minuteVal = Math.round(m/5)*5;
+            document.getElementById(`m-${dayIdx}`).value = String(minuteVal).padStart(2, '0');
+            // --------------------------------------------------
+
             document.getElementById(`t-${dayIdx}`).value = item.text; 
             document.getElementById(`p-${dayIdx}`).value = item.poi?.id || '';
             
