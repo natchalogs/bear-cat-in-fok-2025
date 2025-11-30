@@ -422,7 +422,10 @@
 
         async function addCheck() { const n=document.getElementById('checklist-name').value.trim(); if(n) { await updateDoc(doc(db, docRefPath), { checklist: arrayUnion({id:`c${Date.now()}`, name:n, done:false}) }); document.getElementById('checklist-name').value=''; } }
         async function toggleCheck(id, done) { const l = appData.checklist.map(c=>c.id===id?{...c, done}:c); await updateDoc(doc(db, docRefPath), { checklist: l }); }
-        async function removeCheck(id) { await updateDoc(doc(db, docRefPath), { checklist: appData.checklist.filter(c=>c.id!==id) }); }
+        async function removeCheck(id) { 
+            if(!confirm('ลบรายการนี้?')) return; 
+            await updateDoc(doc(db, docRefPath), { checklist: appData.checklist.filter(c=>c.id!==id) }); 
+        }
         
         // --- FIXED: Robust Add Expense ---
         async function addExp() { 
@@ -446,7 +449,10 @@
                 setLoading('btn-add-exp', false); 
             }
         }
-        async function removeExp(id) { await updateDoc(doc(db, docRefPath), { expenses: appData.expenses.filter(e=>e.id!==id) }); }
+        async function removeExp(id) { 
+            if(!confirm('ลบรายจ่ายนี้?')) return; 
+            await updateDoc(doc(db, docRefPath), { expenses: appData.expenses.filter(e=>e.id!==id) }); 
+        }
 
         window.app = { 
             initFirebase, signInWithGoogle: ()=>signInWithPopup(auth, new GoogleAuthProvider()), signOut: ()=>signOut(auth),
