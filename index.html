@@ -142,6 +142,10 @@
                 renderExpenses(data.expenses || []);
                 renderAccommodations(data.accommodations || []);
                 renderFlights(data.flightInfo || []);
+                
+                // 🔥 บรรทัดนี้ที่ขาดไปครับ: สั่งให้แสดงผลลิงก์
+                renderLinks(data.usefulLinks || []); 
+                
             } catch (e) { console.error("Render Error", e); }
         }
 
