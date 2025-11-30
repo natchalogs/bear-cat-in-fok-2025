@@ -165,16 +165,15 @@
                         </div>
                     </summary>
                     <div class="p-4 border-t border-slate-50 bg-white">
-                        <div class="space-y-4 mb-4">${itemsHtml || '<div class="text-center text-slate-300 text-sm italic py-2">ว่างเปล่า</div>'}</div>
                         
-                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex flex-col gap-2">
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex flex-col gap-2 mb-4">
                             <div class="flex flex-col sm:flex-row gap-2">
                                 <div class="flex bg-white border border-slate-200 rounded px-1 h-9 items-center sm:w-auto w-full justify-center">
-                                    <select id="h-${idx}" class="bg-transparent text-sm outline-none">${Array.from({length:24},(_,i)=>`<option>${String(i).padStart(2,'0')}</option>`).join('')}</select>
+                                    <select id="h-${idx}" class="bg-transparent text-sm outline-none">${Array.from({length:24},(_,i)=>`<option ${i===9?'selected':''}>${String(i).padStart(2,'0')}</option>`).join('')}</select>
                                     <span class="text-slate-300 mx-1">:</span>
                                     <select id="m-${idx}" class="bg-transparent text-sm outline-none">${Array.from({length:12},(_,i)=>`<option>${String(i*5).padStart(2,'0')}</option>`).join('')}</select>
                                 </div>
-                                <input id="t-${idx}" type="text" placeholder="ทำอะไร..." class="flex-grow border border-slate-200 rounded px-2 text-sm h-9">
+                                <input id="t-${idx}" type="text" placeholder="ทำอะไร..." onkeydown="if(event.key === 'Enter') window.app.addItem(${idx})" class="flex-grow border border-slate-200 rounded px-2 text-sm h-9">
                             </div>
                             
                             <select id="p-${idx}" class="w-full border border-slate-200 rounded text-sm h-9 bg-white px-2"><option value="">- สถานที่ (Optional) -</option>${poiOpts}</select>
@@ -185,6 +184,9 @@
                                 <button id="btn-cancel-${idx}" onclick="window.app.cancelEditItem(${idx})" class="hidden w-full sm:w-auto px-4 bg-slate-300 text-white rounded text-sm h-9">ยกเลิก</button>
                             </div>
                         </div>
+
+                        <div class="space-y-4 mb-4">${itemsHtml || '<div class="text-center text-slate-300 text-sm italic py-2">ว่างเปล่า</div>'}</div>
+                        
                     </div>
                 </details>`;
             }).join('');
