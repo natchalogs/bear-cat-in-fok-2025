@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Bear Cat In FOK 2025</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#6366f1">
+    <meta name="theme-color" content="#312e81">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="pwa-icon.png">
@@ -191,8 +191,23 @@
         let currentEdit = { dayIndex: null, itemId: null, checklistId: null, expenseId: null, poiId: null };
 
         tailwind.config = {
-            theme: { extend: { fontFamily: { sans: ['Inter', 'Noto Sans Thai', 'sans-serif'] }, colors: { brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' } } } }
-        };
+    theme: { 
+        extend: { 
+            fontFamily: { sans: ['Inter', 'Noto Sans Thai', 'sans-serif'] }, 
+            colors: { 
+                brand: { 
+                    50: '#eef2ff', 
+                    100: '#e0e7ff', 
+                    500: '#6366f1', 
+                    600: '#4f46e5', 
+                    700: '#4338ca',
+                    800: '#3730a3', // เพิ่มสีเข้ม
+                    900: '#312e81'  // เพิ่มสีเข้มมาก (ใช้กับ Status bar)
+                } 
+            } 
+        } 
+    }
+};
 
         function displayError(message) {
             const el = document.getElementById('error-message');
@@ -907,18 +922,17 @@
     </div>
 
     <div id="sticky-header-container" class="fixed top-0 left-0 right-0 z-50 hidden">
-        <div id="pwa-status-bar" class="h-[env(safe-area-inset-top)] bg-brand-600"></div>
         <header id="main-header"
-            class="flex justify-between items-center bg-gradient-to-r from-brand-600 to-brand-700 p-4 shadow-lg text-white">
+            class="flex justify-between items-center bg-gradient-to-r from-brand-800 to-brand-900 px-4 pb-4 pt-[calc(env(safe-area-inset-top)+1rem)] shadow-lg text-white">
+            
             <div class="flex flex-col">
                 <h1 class="font-bold text-lg md:text-xl leading-tight">Bear Cat Trip 2025 🇯🇵</h1>
                 <p class="text-[10px] md:text-sm text-brand-100 opacity-90">Dec 27 - Jan 3</p>
             </div>
-            <div
-                class="flex items-center bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 shadow-lg gap-3">
+            
+            <div class="flex items-center bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 shadow-lg gap-3">
                 <div class="flex items-center gap-2">
-                    <div class="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.6)]">
-                    </div>
+                    <div class="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.6)]"></div>
                     <span id="user-display" class="text-[10px] md:text-xs font-bold text-white tracking-wide"></span>
                 </div>
                 <div class="w-px h-3 bg-white/20"></div>
@@ -926,13 +940,14 @@
                     class="text-[10px] md:text-xs font-semibold text-white/80 hover:text-white transition-all active:scale-90 uppercase tracking-tighter">Logout</button>
             </div>
         </header>
+
         <div id="header-dynamic-bar"
             class="bg-white/95 backdrop-blur-md border-b border-slate-200 h-14 opacity-100 overflow-hidden transition-all duration-300 flex items-center px-4 shadow-sm">
             <span id="active-section-name" class="text-xl font-bold text-slate-800 truncate">🗺️ แผนเดินทาง</span>
         </div>
     </div>
 
-    <div id="main-app" class="hidden max-w-3xl mx-auto p-4 pt-44 sm:pt-48 mt-[env(safe-area-inset-top)]">
+    <div id="main-app" class="hidden max-w-3xl mx-auto p-4 pt-36 sm:pt-40 mt-[env(safe-area-inset-top)]">
         <div id="error-message" class="hidden bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-sm"
             id="error-message-text"></div>
 
