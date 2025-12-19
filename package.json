@@ -1,0 +1,13 @@
+{
+    "name": "bear-cat-in-fok-2025",
+    "version": "1.0.0",
+    "description": "Fukuoka - Osaka 2025 Trip Planner",
+    "scripts": {
+        "dev": "npx serve .",
+        "build": "echo 'No build step required for static HTML' && exit 0",
+        "serve": "firebase serve"
+    },
+    "devDependencies": {
+        "serve": "^14.2.4"
+    }
+}
