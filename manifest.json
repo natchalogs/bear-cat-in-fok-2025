@@ -4,8 +4,8 @@
   "description": "Fukuoka - Osaka 2025 Trip Planner",
   "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#312e81",
-  "theme_color": "#312e81",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "icons": [
     {
       "src": "pwa-icon.png",
