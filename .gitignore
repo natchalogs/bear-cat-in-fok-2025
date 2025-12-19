@@ -8,7 +8,16 @@ firebase-debug.log*
 firebase-debug.*.log*
 
 # Firebase cache
+# Firebase Cache
 .firebase/
+
+# Environment Variables
+.env
+.env.local
+*.local
+secrets.js
+dist/
+build.js
 
 # Firebase config
 

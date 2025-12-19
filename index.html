@@ -158,13 +158,28 @@
             transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
     </style>
+    <!-- Local config (ignored by git). Create this file and define window.__firebase_config / window.__gemini_api_key -->
+    <script src="secrets.js" onerror="console.log('Using default/injected config')"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, updateDoc, getDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // Configuration: Use injected config if available, fallback to defaults
+        // Note: For better security, keep specific keys in an ignored config file or use environment variable injection during deployment.
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyDzYQTm0V6yBcOCyBGJxD65AoGRHKEOZng", authDomain: "bear-cat-in-fok-2025.firebaseapp.com", projectId: "bear-cat-in-fok-2025", storageBucket: "bear-cat-in-fok-2025.firebasestorage.app", messagingSenderId: "178010604106", appId: "1:178010604106:web:2dc3d30600b7a8d7769cb3", measurementId: "G-KDSLTNV0MJ"
+            apiKey: "",
+            authDomain: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: "",
+            measurementId: ""
+        };
+
+        // Placeholder for Gemini / AI Config
+        const aiConfig = {
+            geminiApiKey: typeof __gemini_api_key !== 'undefined' ? __gemini_api_key : ''
         };
 
         let app, db, auth, userId, userDisplayName;
@@ -902,7 +917,7 @@
             <div
                 class="flex items-center bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 shadow-lg gap-3">
                 <div class="flex items-center gap-2">
-                    <div class="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.6)] animate-pulse">
+                    <div class="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.6)]">
                     </div>
                     <span id="user-display" class="text-[10px] md:text-xs font-bold text-white tracking-wide"></span>
                 </div>
