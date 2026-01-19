@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bear-cat-trip-v8';
+const CACHE_NAME = 'bear-cat-trip-v9';
 const ASSETS = [
   '/',
   '/index.html',

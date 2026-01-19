@@ -1,7 +1,7 @@
 {
-  "name": "Bear Cat Trip 2025",
+  "name": "Bear Cat Trip",
   "short_name": "BearCatTrip",
-  "description": "Fukuoka - Osaka 2025 Trip Planner",
+  "description": "Trip Planner",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#000000",
