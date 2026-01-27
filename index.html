@@ -446,6 +446,43 @@
         }
 
         function renderFlights(list) { 
+            // --- เริ่มส่วนที่เพิ่ม: ข้อมูลเที่ยวบินสำหรับทริป 2026 ---
+            if (activeTripKey === '2026') {
+                const flights2026 = [
+                    {
+                        title: "ขาไป: กรุงเทพฯ - โตเกียว (25-26 ธ.ค.)",
+                        flights: [
+                            "<strong>กรุงเทพฯ - โฮจิมินห์ (Vietnam Airlines · VN608)</strong>",
+                            "ขาไป: 25 ธ.ค. 2026 21:15 น. (สุวรรณภูมิ)",
+                            "ถึง: 25 ธ.ค. 2026 23:00 น. (เตินเซินเญิ้ต T2)",
+                            "",
+                            "<strong>โฮจิมินห์ - โตเกียว (Vietnam Airlines · VN306)</strong>",
+                            "ขาไป: 26 ธ.ค. 2026 00:20 น. (เตินเซินเญิ้ต T2)",
+                            "ถึง: 26 ธ.ค. 2026 07:45 น. (นะริตะ T1)"
+                        ]
+                    },
+                    {
+                        title: "ขากลับ: โตเกียว - กรุงเทพฯ (2 ม.ค.)",
+                        flights: [
+                            "<strong>โตเกียว - ปักกิ่ง (Air China · CA184)</strong>",
+                            "ขาไป: 2 ม.ค. 2027 08:30 น. (ฮาเนดะ T3)",
+                            "ถึง: 2 ม.ค. 2027 11:40 น. (แคปิตอล T3)",
+                            "",
+                            "<strong>ปักกิ่ง - กรุงเทพฯ (Air China · CA959)</strong>",
+                            "ขาไป: 2 ม.ค. 2027 14:00 น. (แคปิตอล T3)",
+                            "ถึง: 2 ม.ค. 2027 18:05 น. (สุวรรณภูมิ)"
+                        ]
+                    }
+                ];
+
+                flights2026.forEach(flight => {
+                    // ตรวจสอบเพื่อไม่ให้ข้อมูลซ้ำ
+                    const exists = list.some(item => item.title === flight.title);
+                    if (!exists) {
+                        list.push(flight);
+                    }
+                });
+            } 
             document.getElementById('flight-info-container').innerHTML = list.map(f => `
             <div class="p-3 bg-slate-50 dark:bg-slate-800 rounded border border-slate-100 dark:border-slate-700 mb-2 transition-colors">
                 <h4 class="font-bold text-brand-700 dark:text-brand-400 text-sm">${f.title}</h4>
